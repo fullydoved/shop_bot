@@ -5,63 +5,73 @@
 {% block content %}
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <!-- Stats Cards -->
-    <div class="bg-white rounded-lg shadow p-6">
+    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-maple-500">
         <h3 class="text-lg font-semibold text-gray-700">Inventory Items</h3>
-        <p class="text-3xl font-bold text-green-600">{{ item_count }}</p>
+        <p class="text-3xl font-bold text-maple-500">{{ item_count }}</p>
         <p class="text-gray-500">across {{ bin_count }} bins</p>
     </div>
 
-    <div class="bg-white rounded-lg shadow p-6">
+    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-beaver-500">
         <h3 class="text-lg font-semibold text-gray-700">Active Projects</h3>
-        <p class="text-3xl font-bold text-blue-600">{{ active_projects }}</p>
+        <p class="text-3xl font-bold text-beaver-500">{{ active_projects }}</p>
     </div>
 
-    <div class="bg-white rounded-lg shadow p-6">
+    <div class="bg-white rounded-lg shadow-md p-6 border-l-4 border-amber-500">
         <h3 class="text-lg font-semibold text-gray-700">Pending Tasks</h3>
-        <p class="text-3xl font-bold text-orange-600">{{ pending_tasks }}</p>
+        <p class="text-3xl font-bold text-amber-600">{{ pending_tasks }}</p>
     </div>
 
     <!-- Chat Interface -->
-    <div class="lg:col-span-2 bg-white rounded-lg shadow">
-        <div class="p-4 border-b flex justify-between items-center">
-            <h2 class="text-xl font-semibold">Chat with Beavs</h2>
+    <div class="lg:col-span-2 bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="maple-gradient p-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <img src="/static/favicon.svg" alt="Beavs" class="w-8 h-8">
+                <h2 class="text-xl font-semibold text-white">Chat with B.E.A.V.S.</h2>
+            </div>
             {% if chat_messages %}
-            <button type="button" onclick="clearChat()" class="text-sm text-gray-500 hover:text-red-600">
+            <button type="button" onclick="clearChat()" class="text-sm text-red-100 hover:text-white transition-colors">
                 Clear history
             </button>
             {% endif %}
         </div>
-        <div id="chat-messages" class="h-96 overflow-y-auto p-4 space-y-4">
+        <div id="chat-messages" class="h-96 overflow-y-auto p-4 space-y-4 bg-gray-50">
             {% if chat_messages %}
                 {% for msg in chat_messages %}
                     {% if msg.role == 'user' %}
-                    <div class="bg-blue-50 p-3 rounded-lg ml-8">
-                        <p class="text-sm text-gray-500">You</p>
+                    <div class="bg-white border border-gray-200 p-3 rounded-lg ml-8 shadow-sm">
+                        <p class="text-sm text-gray-500 font-medium">You</p>
                         <p>{{ msg.content }}</p>
                     </div>
                     {% else %}
-                    <div class="bg-green-100 p-3 rounded-lg">
-                        <p class="text-sm text-gray-500">Beavs</p>
-                        <p class="whitespace-pre-wrap">{{ msg.content }}</p>
+                    <div class="bg-maple-50 border border-maple-100 p-3 rounded-lg mr-8 shadow-sm">
+                        <p class="text-sm text-maple-600 font-medium flex items-center gap-1">
+                            <img src="/static/favicon.svg" alt="" class="w-4 h-4">
+                            B.E.A.V.S.
+                        </p>
+                        <p class="whitespace-pre-wrap text-gray-800">{{ msg.content }}</p>
                     </div>
                     {% endif %}
                 {% endfor %}
             {% else %}
-            <div class="bg-green-100 p-3 rounded-lg">
-                <p class="text-green-800">Hey there, bud! I'm Beavs, your shop assistant. How can I help you today, eh?</p>
+            <div class="bg-maple-50 border border-maple-100 p-4 rounded-lg mr-8 shadow-sm">
+                <p class="text-sm text-maple-600 font-medium flex items-center gap-1 mb-1">
+                    <img src="/static/favicon.svg" alt="" class="w-4 h-4">
+                    B.E.A.V.S.
+                </p>
+                <p class="text-gray-800">Hey there, bud! I'm B.E.A.V.S., your shop assistant. How can I help you today, eh?</p>
             </div>
             {% endif %}
         </div>
-        <div class="p-4 border-t">
+        <div class="p-4 border-t bg-white">
             <form id="chat-form" hx-post="/chat/" hx-target="#chat-messages" hx-swap="beforeend"
                   hx-on::before-request="showUserMessage(event)"
                   hx-on::after-request="hideLoading(); document.getElementById('chat-form').reset();">
                 {% csrf_token %}
                 <div class="flex gap-2">
-                    <input type="text" name="message" id="chat-input" placeholder="Type a message..."
-                           class="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                    <input type="text" name="message" id="chat-input" placeholder="Type a message, eh..."
+                           class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-maple-500 focus:border-transparent"
                            autocomplete="off" required>
-                    <button type="submit" id="send-btn" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400">
+                    <button type="submit" id="send-btn" class="maple-gradient text-white px-6 py-2 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity font-medium">
                         Send
                     </button>
                 </div>
@@ -70,26 +80,32 @@
     </div>
 
     <!-- Recent Tasks -->
-    <div class="bg-white rounded-lg shadow">
-        <div class="p-4 border-b">
-            <h2 class="text-xl font-semibold">Pending Tasks</h2>
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <div class="bg-beaver-500 p-4">
+            <h2 class="text-xl font-semibold text-white flex items-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                Pending Tasks
+            </h2>
         </div>
         <div class="p-4">
             {% if tasks %}
-            <ul class="space-y-2">
+            <ul class="space-y-3">
                 {% for task in tasks %}
-                <li class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full
-                        {% if task.priority == 'high' %}bg-red-500
-                        {% elif task.priority == 'medium' %}bg-yellow-500
+                <li class="flex items-center gap-3 p-2 rounded hover:bg-gray-50 transition-colors">
+                    <span class="w-3 h-3 rounded-full flex-shrink-0
+                        {% if task.priority == 'high' %}bg-maple-500
+                        {% elif task.priority == 'medium' %}bg-amber-500
                         {% else %}bg-gray-400{% endif %}">
                     </span>
-                    <span>{{ task.title }}</span>
+                    <span class="text-gray-700">{{ task.title }}</span>
                 </li>
                 {% endfor %}
             </ul>
             {% else %}
-            <p class="text-gray-500">No pending tasks. Nice work!</p>
+            <div class="text-center py-6">
+                <svg class="w-12 h-12 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <p class="text-gray-500">No pending tasks. Nice work, bud!</p>
+            </div>
             {% endif %}
         </div>
     </div>
@@ -105,19 +121,22 @@ function showUserMessage(event) {
 
     // Add user message immediately
     const userDiv = document.createElement('div');
-    userDiv.className = 'bg-blue-50 p-3 rounded-lg ml-8';
-    userDiv.innerHTML = '<p class="text-sm text-gray-500">You</p><p>' + escapeHtml(message) + '</p>';
+    userDiv.className = 'bg-white border border-gray-200 p-3 rounded-lg ml-8 shadow-sm';
+    userDiv.innerHTML = '<p class="text-sm text-gray-500 font-medium">You</p><p>' + escapeHtml(message) + '</p>';
     chatMessages.appendChild(userDiv);
 
     // Add loading indicator
     const loadingDiv = document.createElement('div');
     loadingDiv.id = 'loading-indicator';
-    loadingDiv.className = 'bg-green-100 p-3 rounded-lg';
+    loadingDiv.className = 'bg-maple-50 border border-maple-100 p-3 rounded-lg mr-8 shadow-sm';
     loadingDiv.innerHTML = `
-        <p class="text-sm text-gray-500">Beavs</p>
-        <p class="flex items-center gap-2">
-            <span class="inline-block animate-pulse">🦫</span>
-            <span class="text-gray-500 italic">Thinking, eh...</span>
+        <p class="text-sm text-maple-600 font-medium flex items-center gap-1">
+            <img src="/static/favicon.svg" alt="" class="w-4 h-4">
+            B.E.A.V.S.
+        </p>
+        <p class="flex items-center gap-2 text-gray-600">
+            <span class="inline-block animate-bounce">🍁</span>
+            <span class="italic">Thinking, eh...</span>
         </p>
     `;
     chatMessages.appendChild(loadingDiv);

@@ -4,7 +4,7 @@ PERSONALITY: Friendly hoser, says "eh" and "bud", keeps it brief.
 
 RESPONSE RULES:
 - 1-2 sentences MAX
-- Use tools for inventory, projects, and tasks
+- Use tools for inventory, projects, tasks, and lighting
 - Get to the point, eh
 
 TASK LINKING:
@@ -12,6 +12,15 @@ TASK LINKING:
 - "add task to Trident: lube rails" → create_task with project_name="Trident", title="lube rails"
 - "remind me to order PLA" → create_task with just title (no project)
 - "move that task to the drone project" → update_task with project_name
+
+LIGHTING ZONES:
+- Walls: north (n), south (s), east (e), west (w)
+- Corners: northeast (ne), northwest (nw), southeast (se), southwest (sw)
+- Groups: all, walls, corners
+
+MUSIC CONTROL:
+- Control music playing on the shop Chromecast
+- Pause, resume, skip, previous, volume, status
 """
 
 TOOL_DEFINITIONS = [
@@ -226,6 +235,102 @@ TOOL_DEFINITIONS = [
                 },
                 'required': ['title']
             }
+        }
+    },
+    # --- Lighting tools ---
+    {
+        'type': 'function',
+        'function': {
+            'name': 'control_lights',
+            'description': 'Turn shop lights on/off, set brightness. Zones: all, walls, corners, north (n), south (s), east (e), west (w), ne, nw, se, sw',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'zone': {'type': 'string', 'description': 'Zone name (all, walls, corners, or specific wall/corner)'},
+                    'on': {'type': 'boolean', 'description': 'Turn on (true) or off (false)'},
+                    'brightness': {'type': 'integer', 'description': 'Brightness 0-255'}
+                },
+                'required': ['zone']
+            }
+        }
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'set_light_color',
+            'description': 'Set light color for a zone. Zones: all, walls, corners, north, south, east, west, ne, nw, se, sw. Colors: red, green, blue, white, warm, cool, orange, purple, yellow, pink, cyan, magenta, or hex (#FF0000)',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'zone': {'type': 'string', 'description': 'Zone name'},
+                    'color': {'type': 'string', 'description': 'Color name or hex code'}
+                },
+                'required': ['zone', 'color']
+            }
+        }
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'set_light_effect',
+            'description': 'Set a lighting effect. Zones: all, walls, corners, or specific zone. Effects: solid, blink, breathe, wipe, random, rainbow, scan, fade, chase, fire, twinkle, fireworks',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'zone': {'type': 'string', 'description': 'Zone name'},
+                    'effect': {'type': 'string', 'description': 'Effect name'}
+                },
+                'required': ['zone', 'effect']
+            }
+        }
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'get_light_status',
+            'description': 'Get the current status of all shop lights',
+            'parameters': {'type': 'object', 'properties': {}}
+        }
+    },
+    # --- Music tools ---
+    {
+        'type': 'function',
+        'function': {
+            'name': 'control_music',
+            'description': 'Control music playback on the shop speaker. Actions: pause, play/resume, stop, skip/next, previous/back',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'action': {
+                        'type': 'string',
+                        'enum': ['pause', 'play', 'stop', 'skip', 'previous'],
+                        'description': 'Playback action'
+                    }
+                },
+                'required': ['action']
+            }
+        }
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'set_music_volume',
+            'description': 'Set music volume level or adjust up/down',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'level': {'type': 'integer', 'description': 'Volume level 0-100'},
+                    'adjust': {'type': 'string', 'enum': ['up', 'down'], 'description': 'Adjust volume up or down by 10%'}
+                }
+            }
+        }
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'get_music_status',
+            'description': 'Get info about what music is currently playing',
+            'parameters': {'type': 'object', 'properties': {}}
         }
     },
 ]

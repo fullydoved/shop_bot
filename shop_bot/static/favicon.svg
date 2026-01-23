@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Canadian flag background circle -->
+  <circle cx="32" cy="32" r="30" fill="#fff"/>
+  <circle cx="32" cy="32" r="28" fill="#D52B1E" opacity="0.1"/>
+
+  <!-- Beaver body -->
+  <ellipse cx="32" cy="38" rx="18" ry="14" fill="#8B4513"/>
+
+  <!-- Beaver head -->
+  <circle cx="32" cy="22" r="14" fill="#A0522D"/>
+
+  <!-- Ears -->
+  <circle cx="21" cy="12" r="4" fill="#8B4513"/>
+  <circle cx="43" cy="12" r="4" fill="#8B4513"/>
+  <circle cx="21" cy="12" r="2.5" fill="#DEB887"/>
+  <circle cx="43" cy="12" r="2.5" fill="#DEB887"/>
+
+  <!-- Snout -->
+  <ellipse cx="32" cy="26" rx="8" ry="6" fill="#DEB887"/>
+
+  <!-- Nose -->
+  <ellipse cx="32" cy="23" rx="3" ry="2" fill="#2C1810"/>
+
+  <!-- Eyes -->
+  <circle cx="26" cy="18" r="3" fill="#fff"/>
+  <circle cx="38" cy="18" r="3" fill="#fff"/>
+  <circle cx="26" cy="18" r="1.5" fill="#2C1810"/>
+  <circle cx="38" cy="18" r="1.5" fill="#2C1810"/>
+
+  <!-- Beaver teeth -->
+  <rect x="29" y="28" width="3" height="5" rx="1" fill="#fff"/>
+  <rect x="32" y="28" width="3" height="5" rx="1" fill="#fff"/>
+
+  <!-- Maple leaf accent on chest -->
+  <path d="M32 42 L30 44 L28 43 L29 45 L27 46 L30 46 L29 48 L32 47 L35 48 L34 46 L37 46 L35 45 L36 43 L34 44 Z" fill="#D52B1E"/>
+
+  <!-- Tail -->
+  <ellipse cx="32" cy="54" rx="10" ry="4" fill="#5D3A1A"/>
+  <line x1="24" y1="54" x2="40" y2="54" stroke="#3D2A10" stroke-width="0.5"/>
+  <line x1="26" y1="52" x2="38" y2="52" stroke="#3D2A10" stroke-width="0.5"/>
+  <line x1="26" y1="56" x2="38" y2="56" stroke="#3D2A10" stroke-width="0.5"/>
+</svg>

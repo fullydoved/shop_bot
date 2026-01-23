@@ -3,6 +3,8 @@ anthropic>=0.40
 python-dotenv>=1.0
 rich>=13.0
 django-htmx>=1.17
+requests>=2.31
+PyChromecast>=14.0
 
 # Optional: for local LLM fallback
 ollama>=0.4

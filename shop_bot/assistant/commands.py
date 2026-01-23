@@ -4,6 +4,14 @@ from projects.services import (
     create_task, get_pending_tasks, get_all_tasks, update_task, complete_task, delete_task,
 )
 from projects.models import Project, Task
+from lighting.services import (
+    set_zone_power, set_zone_color, set_zone_brightness, set_zone_effect,
+    get_light_status, parse_color,
+)
+from chromecast.services import (
+    music_pause, music_play, music_stop, music_skip, music_previous,
+    music_volume, music_volume_up, music_volume_down, music_status,
+)
 
 
 def handle_add_inventory_items(bin_code: str, items: list, divider_type: str = None, **kwargs) -> str:
@@ -213,6 +221,106 @@ def handle_delete_task(title: str, **kwargs) -> str:
     return f"Deleted task: {title}"
 
 
+# --- Lighting handlers ---
+
+def handle_control_lights(zone: str, on: bool = None, brightness: int = None, **kwargs) -> str:
+    """Handle controlling lights (power and brightness)."""
+    results = []
+    try:
+        if on is not None:
+            results.append(set_zone_power(zone, on))
+        if brightness is not None:
+            results.append(set_zone_brightness(zone, brightness))
+        if not results:
+            # Default: turn on
+            results.append(set_zone_power(zone, True))
+        return ". ".join(results)
+    except ValueError as e:
+        return str(e)
+    except Exception as e:
+        return f"Error controlling lights: {e}"
+
+
+def handle_set_light_color(zone: str, color: str, **kwargs) -> str:
+    """Handle setting light color."""
+    try:
+        rgb = parse_color(color)
+        return set_zone_color(zone, rgb)
+    except ValueError as e:
+        return str(e)
+    except Exception as e:
+        return f"Error setting color: {e}"
+
+
+def handle_set_light_effect(zone: str, effect: str, **kwargs) -> str:
+    """Handle setting a lighting effect."""
+    try:
+        return set_zone_effect(zone, effect)
+    except ValueError as e:
+        return str(e)
+    except Exception as e:
+        return f"Error setting effect: {e}"
+
+
+def handle_get_light_status(**kwargs) -> str:
+    """Handle getting light status."""
+    try:
+        return get_light_status()
+    except Exception as e:
+        return f"Error getting light status: {e}"
+
+
+# --- Music handlers ---
+
+def handle_control_music(action: str, **kwargs) -> str:
+    """Handle music playback control."""
+    try:
+        actions = {
+            'pause': music_pause,
+            'play': music_play,
+            'resume': music_play,
+            'stop': music_stop,
+            'skip': music_skip,
+            'next': music_skip,
+            'previous': music_previous,
+            'back': music_previous,
+        }
+        func = actions.get(action.lower())
+        if func:
+            return func()
+        return f"Unknown action: {action}"
+    except ConnectionError:
+        return "Can't reach the speaker right now, bud"
+    except Exception as e:
+        return f"Error controlling music: {e}"
+
+
+def handle_set_music_volume(level: int = None, adjust: str = None, **kwargs) -> str:
+    """Handle setting music volume."""
+    try:
+        if adjust == 'up':
+            return music_volume_up()
+        elif adjust == 'down':
+            return music_volume_down()
+        elif level is not None:
+            return music_volume(level)
+        return "Specify a volume level (0-100) or direction (up/down)"
+    except ConnectionError:
+        return "Can't reach the speaker right now, bud"
+    except Exception as e:
+        return f"Error setting volume: {e}"
+
+
+def handle_get_music_status(**kwargs) -> str:
+    """Handle getting music status."""
+    try:
+        return music_status()
+    except ConnectionError:
+        return "Can't reach the speaker right now, bud"
+    except Exception as e:
+        return f"Error getting status: {e}"
+
+
 COMMAND_HANDLERS = {
     'add_inventory_items': handle_add_inventory_items,
     'find_inventory': handle_find_inventory,
@@ -228,4 +336,11 @@ COMMAND_HANDLERS = {
     'complete_task': handle_complete_task,
     'update_task': handle_update_task,
     'delete_task': handle_delete_task,
+    'control_lights': handle_control_lights,
+    'set_light_color': handle_set_light_color,
+    'set_light_effect': handle_set_light_effect,
+    'get_light_status': handle_get_light_status,
+    'control_music': handle_control_music,
+    'set_music_volume': handle_set_music_volume,
+    'get_music_status': handle_get_music_status,
 }

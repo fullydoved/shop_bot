@@ -3,20 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Beavs{% endblock %} - Shop Assistant</title>
+    <title>{% block title %}B.E.A.V.S.{% endblock %}</title>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        maple: {
+                            50: '#fef2f2',
+                            100: '#fee2e2',
+                            200: '#fecaca',
+                            300: '#fca5a5',
+                            400: '#f87171',
+                            500: '#D52B1E',
+                            600: '#bf2619',
+                            700: '#a12015',
+                            800: '#7f1a11',
+                            900: '#5c140d',
+                        },
+                        beaver: {
+                            50: '#faf6f3',
+                            100: '#f0e6dc',
+                            200: '#e0ccb8',
+                            300: '#cba98a',
+                            400: '#b8875f',
+                            500: '#8B4513',
+                            600: '#7a3d11',
+                            700: '#63320e',
+                            800: '#4d270b',
+                            900: '#3a1d08',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .maple-gradient {
+            background: linear-gradient(135deg, #D52B1E 0%, #bf2619 100%);
+        }
+    </style>
     {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-gray-100 min-h-screen">
-    <nav class="bg-green-700 text-white p-4">
+<body class="bg-gray-50 min-h-screen">
+    <nav class="maple-gradient text-white p-4 shadow-lg">
         <div class="container mx-auto flex justify-between items-center">
-            <a href="/" class="text-2xl font-bold">🦫 Beavs</a>
-            <div class="space-x-4">
-                <a href="/" class="hover:underline">Dashboard</a>
-                <a href="/inventory/" class="hover:underline">Inventory</a>
-                <a href="/projects/" class="hover:underline">Projects</a>
-                <a href="/tasks/" class="hover:underline">Tasks</a>
+            <a href="/" class="flex items-center gap-3 group">
+                <img src="/static/favicon.svg" alt="Beaver" class="w-10 h-10 group-hover:scale-110 transition-transform">
+                <div>
+                    <span class="text-2xl font-bold tracking-wider">B.E.A.V.S.</span>
+                    <span class="hidden sm:block text-xs text-red-100 -mt-1">Bin Entry And Verification System</span>
+                </div>
+            </a>
+            <div class="flex items-center space-x-6">
+                <a href="/" class="hover:text-red-200 transition-colors flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                    <span class="hidden md:inline">Dashboard</span>
+                </a>
+                <a href="/inventory/" class="hover:text-red-200 transition-colors flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                    <span class="hidden md:inline">Inventory</span>
+                </a>
+                <a href="/projects/" class="hover:text-red-200 transition-colors flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+                    <span class="hidden md:inline">Projects</span>
+                </a>
+                <a href="/tasks/" class="hover:text-red-200 transition-colors flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+                    <span class="hidden md:inline">Tasks</span>
+                </a>
             </div>
         </div>
     </nav>
@@ -25,8 +83,14 @@
         {% block content %}{% endblock %}
     </main>
 
-    <footer class="bg-gray-200 p-4 mt-8 text-center text-gray-600">
-        <p>Beavs - Shop Assistant for Maple Leaf Makers</p>
+    <footer class="bg-beaver-500 text-white p-4 mt-8">
+        <div class="container mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+            <div class="flex items-center gap-2">
+                <img src="/static/favicon.svg" alt="Beaver" class="w-6 h-6">
+                <span class="font-semibold">B.E.A.V.S.</span>
+            </div>
+            <p class="text-beaver-100 text-sm">Shop Assistant for Maple Leaf Makers</p>
+        </div>
     </footer>
 
     {% block extra_js %}{% endblock %}

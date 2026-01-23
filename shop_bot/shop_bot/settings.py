@@ -146,3 +146,10 @@ CLAUDE_MODEL = os.environ.get('CLAUDE_MODEL', 'claude-sonnet-4-20250514')
 # Ollama Configuration (fallback/optional)
 OLLAMA_HOST = os.environ.get('OLLAMA_HOST', 'http://localhost:11434')
 OLLAMA_MODEL = os.environ.get('OLLAMA_MODEL', 'llama3.2')
+
+# WLED Lighting Configuration
+WLED_HOST = os.environ.get('WLED_HOST', 'http://192.168.1.23')
+
+# Chromecast Configuration
+CHROMECAST_HOST = os.environ.get('CHROMECAST_HOST', None)  # Direct IP (preferred for WSL2/Docker)
+CHROMECAST_NAME = os.environ.get('CHROMECAST_NAME', 'Shop Speakers')  # For mDNS discovery fallback
