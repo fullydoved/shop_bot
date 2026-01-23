@@ -1,8 +1,10 @@
 from django.shortcuts import render
 from django.http import HttpResponse
+from django.conf import settings
 from inventory.models import Bin, InventoryItem
 from projects.models import Project, Task
 from assistant.processor import InputProcessor
+from assistant.tts import synthesize
 
 # Max messages to keep in session (matches processor history limit)
 MAX_CHAT_MESSAGES = 10
@@ -29,6 +31,7 @@ def home(request):
         'pending_tasks': Task.objects.filter(status='pending').count(),
         'tasks': Task.objects.filter(status='pending').order_by('-priority')[:5],
         'chat_messages': chat_messages,
+        'wled_host': settings.WLED_HOST,
     }
     return render(request, 'dashboard/home.html', context)
 
@@ -64,3 +67,16 @@ def clear_chat(request):
         processor = get_processor()
         processor.clear_history()
     return HttpResponse('')
+
+
+def tts(request):
+    """Generate TTS audio for given text."""
+    text = request.GET.get('text', '')
+    if not text or len(text) > 1000:  # Limit text length
+        return HttpResponse(status=400)
+
+    try:
+        audio_data = synthesize(text)
+        return HttpResponse(audio_data, content_type='audio/wav')
+    except Exception:
+        return HttpResponse(status=500)

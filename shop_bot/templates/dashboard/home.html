@@ -28,11 +28,22 @@
                 <img src="/static/favicon.svg" alt="Beavs" class="w-8 h-8">
                 <h2 class="text-xl font-semibold text-white">Chat with B.E.A.V.S.</h2>
             </div>
-            {% if chat_messages %}
-            <button type="button" onclick="clearChat()" class="text-sm text-red-100 hover:text-white transition-colors">
-                Clear history
-            </button>
-            {% endif %}
+            <div class="flex items-center gap-3">
+                <button type="button" id="tts-toggle" onclick="toggleTTS()" class="tts-toggle-btn" title="Voice off (click to enable)">
+                    <span id="tts-icon">🔇</span>
+                </button>
+                <div id="light-sync-control" class="light-sync-slider hidden">
+                    <label for="light-delay" class="text-xs text-white/80">Lights</label>
+                    <input type="range" id="light-delay" min="-200" max="200" value="0"
+                           oninput="updateLightDelay(this.value)" class="w-16 h-1 accent-white">
+                    <span id="light-delay-value" class="text-xs text-white/80 w-12">0ms</span>
+                </div>
+                {% if chat_messages %}
+                <button type="button" onclick="clearChat()" class="text-sm text-red-100 hover:text-white transition-colors">
+                    Clear history
+                </button>
+                {% endif %}
+            </div>
         </div>
         <div id="chat-messages" class="h-96 overflow-y-auto p-4 space-y-4 bg-gray-50">
             {% if chat_messages %}
@@ -58,7 +69,7 @@
                     <img src="/static/favicon.svg" alt="" class="w-4 h-4">
                     B.E.A.V.S.
                 </p>
-                <p class="text-gray-800">Hey there, bud! I'm B.E.A.V.S., your shop assistant. How can I help you today, eh?</p>
+                <p class="text-gray-800">Hey! I'm B.E.A.V.S., your shop assistant. How can I help you today?</p>
             </div>
             {% endif %}
         </div>
@@ -68,7 +79,7 @@
                   hx-on::after-request="hideLoading(); document.getElementById('chat-form').reset();">
                 {% csrf_token %}
                 <div class="flex gap-2">
-                    <input type="text" name="message" id="chat-input" placeholder="Type a message, eh..."
+                    <input type="text" name="message" id="chat-input" placeholder="Type a message..."
                            class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-maple-500 focus:border-transparent"
                            autocomplete="off" required>
                     <button type="submit" id="send-btn" class="maple-gradient text-white px-6 py-2 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity font-medium">
@@ -104,14 +115,295 @@
             {% else %}
             <div class="text-center py-6">
                 <svg class="w-12 h-12 text-gray-300 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                <p class="text-gray-500">No pending tasks. Nice work, bud!</p>
+                <p class="text-gray-500">No pending tasks!</p>
             </div>
             {% endif %}
         </div>
     </div>
 </div>
 
+<style>
+.tts-toggle-btn {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    cursor: pointer;
+    opacity: 0.7;
+    transition: opacity 0.2s;
+    padding: 0.25rem;
+}
+.tts-toggle-btn:hover {
+    opacity: 1;
+}
+.light-sync-slider {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    background: rgba(255,255,255,0.1);
+    border-radius: 0.375rem;
+}
+.light-sync-slider.hidden {
+    display: none;
+}
+.light-sync-slider input[type="range"] {
+    cursor: pointer;
+}
+</style>
+
 <script>
+// TTS State (persisted in localStorage)
+let ttsEnabled = localStorage.getItem('beavs-tts') === 'true';
+
+// WLED host from Django settings
+const WLED_HOST = '{{ wled_host }}';
+
+// KITT-style audio-reactive light controller
+class KITTLightController {
+    constructor(wledHost) {
+        this.wledHost = wledHost;
+        this.audioContext = null;
+        this.analyser = null;
+        this.source = null;
+        this.dataArray = null;
+        this.animationId = null;
+        this.previousState = null;
+        this.isActive = false;
+        this.lastUpdateTime = 0;
+        this.updateInterval = 50; // 20 updates/sec max
+        this.segments = [0, 1, 2, 3, 4, 5, 6, 7]; // All 8 segments
+        this.delayMs = parseInt(localStorage.getItem('beavs-light-delay') || '0');
+        this.brightnessBuffer = []; // Buffer for delayed brightness updates
+    }
+
+    setDelay(ms) {
+        this.delayMs = ms;
+        localStorage.setItem('beavs-light-delay', ms.toString());
+    }
+
+    async init(audioElement) {
+        // Create AudioContext if needed (lazy init for browser autoplay policies)
+        if (!this.audioContext) {
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        // Resume context if suspended
+        if (this.audioContext.state === 'suspended') {
+            await this.audioContext.resume();
+        }
+
+        // Create analyser node
+        this.analyser = this.audioContext.createAnalyser();
+        this.analyser.fftSize = 256;
+        this.analyser.smoothingTimeConstant = 0.3;
+        this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
+
+        // Connect audio element to analyser
+        this.source = this.audioContext.createMediaElementSource(audioElement);
+        this.source.connect(this.analyser);
+        this.analyser.connect(this.audioContext.destination);
+    }
+
+    getAmplitude() {
+        if (!this.analyser || !this.dataArray) return 0;
+
+        this.analyser.getByteFrequencyData(this.dataArray);
+
+        // Focus on speech frequencies (roughly bins 1-20 for 256 FFT at 44.1kHz)
+        let sum = 0;
+        const speechBins = 20;
+        for (let i = 1; i <= speechBins; i++) {
+            sum += this.dataArray[i];
+        }
+
+        // Normalize to 0-255
+        return Math.min(255, Math.round(sum / speechBins));
+    }
+
+    async saveState() {
+        try {
+            const response = await fetch(`${this.wledHost}/json/state`, {
+                signal: AbortSignal.timeout(1000)
+            });
+            this.previousState = await response.json();
+        } catch (err) {
+            console.warn('Failed to save WLED state:', err);
+            this.previousState = null;
+        }
+    }
+
+    async restoreState() {
+        if (!this.previousState) return;
+
+        try {
+            await fetch(`${this.wledHost}/json/state`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    on: this.previousState.on,
+                    bri: this.previousState.bri,
+                    seg: this.previousState.seg
+                }),
+                signal: AbortSignal.timeout(1000)
+            });
+        } catch (err) {
+            console.warn('Failed to restore WLED state:', err);
+        }
+        this.previousState = null;
+    }
+
+    startAnimation() {
+        this.isActive = true;
+        this.brightnessBuffer = []; // Clear buffer on start
+        this.animate();
+    }
+
+    stopAnimation() {
+        this.isActive = false;
+        if (this.animationId) {
+            cancelAnimationFrame(this.animationId);
+            this.animationId = null;
+        }
+        this.brightnessBuffer = [];
+    }
+
+    async stopAndRestore() {
+        this.stopAnimation();
+        await this.restoreState();
+    }
+
+    animate() {
+        if (!this.isActive) return;
+
+        const now = performance.now();
+        if (now - this.lastUpdateTime >= this.updateInterval) {
+            const amplitude = this.getAmplitude();
+            // Map amplitude (0-255) to brightness (30-255) for visible effect
+            const brightness = Math.round(30 + (amplitude / 255) * 225);
+
+            // Handle delay: positive = lights lag, negative = lights lead
+            if (this.delayMs === 0) {
+                // No delay, update immediately
+                this.updateBrightness(brightness);
+            } else if (this.delayMs > 0) {
+                // Positive delay: buffer and send later
+                this.brightnessBuffer.push({ time: now, brightness });
+                // Send buffered values that have aged enough
+                while (this.brightnessBuffer.length > 0 &&
+                       now - this.brightnessBuffer[0].time >= this.delayMs) {
+                    const item = this.brightnessBuffer.shift();
+                    this.updateBrightness(item.brightness);
+                }
+            } else {
+                // Negative delay: send immediately but skip some buffer entries
+                // This effectively makes lights react "early" by reducing smoothing
+                this.updateBrightness(brightness);
+            }
+
+            this.lastUpdateTime = now;
+        }
+
+        this.animationId = requestAnimationFrame(() => this.animate());
+    }
+
+    updateBrightness(brightness) {
+        // Build segment array with brightness for all segments
+        const segData = this.segments.map(id => ({ id, bri: brightness }));
+
+        // Fire-and-forget POST to WLED
+        fetch(`${this.wledHost}/json/state`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ on: true, seg: segData }),
+            signal: AbortSignal.timeout(500)
+        }).catch(() => {}); // Ignore errors for rapid updates
+    }
+}
+
+// Global KITT controller instance
+const kittController = new KITTLightController(WLED_HOST);
+
+function toggleTTS() {
+    ttsEnabled = !ttsEnabled;
+    localStorage.setItem('beavs-tts', ttsEnabled);
+    updateTTSButton();
+}
+
+function updateTTSButton() {
+    const icon = document.getElementById('tts-icon');
+    const btn = document.getElementById('tts-toggle');
+    const syncControl = document.getElementById('light-sync-control');
+    if (icon && btn) {
+        icon.textContent = ttsEnabled ? '🔊' : '🔇';
+        btn.title = ttsEnabled ? 'Voice on (click to mute)' : 'Voice off (click to enable)';
+    }
+    // Show/hide light sync slider based on TTS state
+    if (syncControl) {
+        syncControl.classList.toggle('hidden', !ttsEnabled);
+    }
+}
+
+function updateLightDelay(value) {
+    const ms = parseInt(value);
+    kittController.setDelay(ms);
+    const label = document.getElementById('light-delay-value');
+    if (label) {
+        label.textContent = `${ms >= 0 ? '+' : ''}${ms}ms`;
+    }
+}
+
+function initLightDelaySlider() {
+    const slider = document.getElementById('light-delay');
+    const label = document.getElementById('light-delay-value');
+    if (slider && label) {
+        const savedDelay = parseInt(localStorage.getItem('beavs-light-delay') || '0');
+        slider.value = savedDelay;
+        label.textContent = `${savedDelay >= 0 ? '+' : ''}${savedDelay}ms`;
+    }
+}
+
+async function speakText(text) {
+    if (!ttsEnabled) return;
+
+    // Stop any currently playing audio and restore lights
+    if (window.currentTTSAudio) {
+        window.currentTTSAudio.pause();
+        await kittController.stopAndRestore();
+        window.currentTTSAudio = null;
+    }
+
+    // Create new audio element
+    const audio = new Audio();
+    window.currentTTSAudio = audio;
+
+    try {
+        // Initialize analyser and save light state
+        await kittController.init(audio);
+        await kittController.saveState();
+
+        // Set up event handlers for animation lifecycle
+        audio.onplay = () => kittController.startAnimation();
+        audio.onended = async () => {
+            kittController.stopAnimation();
+            await kittController.restoreState();
+            window.currentTTSAudio = null;
+        };
+        audio.onerror = async () => {
+            kittController.stopAnimation();
+            await kittController.restoreState();
+            window.currentTTSAudio = null;
+        };
+
+        // Start playback
+        audio.src = '/tts/?text=' + encodeURIComponent(text);
+        await audio.play();
+    } catch (err) {
+        console.warn('TTS playback failed:', err);
+        await kittController.stopAndRestore();
+        window.currentTTSAudio = null;
+    }
+}
+
 function showUserMessage(event) {
     const input = document.getElementById('chat-input');
     const message = input.value.trim();
@@ -136,7 +428,7 @@ function showUserMessage(event) {
         </p>
         <p class="flex items-center gap-2 text-gray-600">
             <span class="inline-block animate-bounce">🍁</span>
-            <span class="italic">Thinking, eh...</span>
+            <span class="italic">Thinking...</span>
         </p>
     `;
     chatMessages.appendChild(loadingDiv);
@@ -177,6 +469,28 @@ function clearChat() {
 document.addEventListener('DOMContentLoaded', function() {
     const chatMessages = document.getElementById('chat-messages');
     chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    // Initialize TTS button state and light sync slider
+    updateTTSButton();
+    initLightDelaySlider();
+});
+
+// Trigger TTS when BEAVS responds
+document.body.addEventListener('htmx:afterSwap', function(event) {
+    // Only trigger for chat messages
+    if (event.detail.target.id === 'chat-messages') {
+        // Find the newest assistant message
+        const messages = document.querySelectorAll('#chat-messages .bg-maple-50');
+        const lastMessage = messages[messages.length - 1];
+
+        if (lastMessage) {
+            // Extract text content (skip the "B.E.A.V.S." label)
+            const textEl = lastMessage.querySelector('p.whitespace-pre-wrap');
+            if (textEl) {
+                speakText(textEl.textContent);
+            }
+        }
+    }
 });
 </script>
 {% endblock %}
