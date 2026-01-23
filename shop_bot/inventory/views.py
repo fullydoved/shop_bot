@@ -2,6 +2,7 @@ from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse
 from django.views.decorators.http import require_POST, require_http_methods
 from .models import InventoryItem, Bin
+from .services import log_inventory_change
 
 
 def inventory_list(request):
@@ -36,6 +37,10 @@ def update_item(request, item_id):
     """Update an item's fields."""
     item = get_object_or_404(InventoryItem, id=item_id)
 
+    # Capture old values for logging
+    old_bin_code = item.bin.code
+    old_quantity = item.quantity
+
     item.name = request.POST.get('name', item.name).strip()
     item.quantity = request.POST.get('quantity') or None
     item.unit = request.POST.get('unit', 'pcs').strip() or 'pcs'
@@ -60,6 +65,20 @@ def update_item(request, item_id):
 
     item.save()
 
+    # Log the change (move or update)
+    new_bin_code = item.bin.code
+    if old_bin_code != new_bin_code:
+        log_inventory_change(
+            'move', item.name, new_bin_code,
+            quantity_before=old_quantity, quantity_after=item.quantity,
+            details={'from_bin': old_bin_code, 'to_bin': new_bin_code}
+        )
+    else:
+        log_inventory_change(
+            'update', item.name, new_bin_code,
+            quantity_before=old_quantity, quantity_after=item.quantity
+        )
+
     return HttpResponse('<span class="text-green-600 text-sm">Saved!</span>')
 
 
@@ -67,6 +86,10 @@ def update_item(request, item_id):
 def delete_item(request, item_id):
     """Delete an item."""
     item = get_object_or_404(InventoryItem, id=item_id)
+    log_inventory_change(
+        'delete', item.name, item.bin.code,
+        quantity_before=item.quantity
+    )
     item.delete()
     return HttpResponse('')
 
@@ -95,6 +118,8 @@ def create_item(request):
         category=request.POST.get('category', '').strip(),
         position=request.POST.get('position', '').strip(),
     )
+
+    log_inventory_change('add', item.name, bin_obj.code, quantity_after=item.quantity)
 
     # Return the new row HTML
     categories = list(

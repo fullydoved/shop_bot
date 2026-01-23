@@ -89,6 +89,19 @@ TOOL_DEFINITIONS = [
             }
         }
     },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'get_inventory_log',
+            'description': 'Get recent inventory activity log (adds, updates, deletes, moves)',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'limit': {'type': 'integer', 'description': 'Number of log entries to return (default 10)'}
+                }
+            }
+        }
+    },
     # --- Project tools ---
     {
         'type': 'function',

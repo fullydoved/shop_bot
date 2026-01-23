@@ -1,5 +1,24 @@
 from django.db.models import QuerySet
-from .models import Bin, InventoryItem
+from .models import Bin, InventoryItem, InventoryLog
+
+
+def log_inventory_change(
+    action: str,
+    item_name: str,
+    bin_code: str,
+    quantity_before: int = None,
+    quantity_after: int = None,
+    details: dict = None
+) -> InventoryLog:
+    """Create an audit log entry for an inventory change."""
+    return InventoryLog.objects.create(
+        action=action,
+        item_name=item_name,
+        bin_code=bin_code,
+        quantity_before=quantity_before,
+        quantity_after=quantity_after,
+        details=details or {}
+    )
 
 
 def get_or_create_bin(code: str) -> Bin:
@@ -32,6 +51,7 @@ def add_item(
 
     if existing:
         # Update existing item
+        old_qty = existing.quantity
         if quantity is not None:
             existing.quantity = quantity
         if category:
@@ -43,6 +63,10 @@ def add_item(
         if position:
             existing.position = position
         existing.save()
+        log_inventory_change(
+            'update', existing.name, bin_code,
+            quantity_before=old_qty, quantity_after=existing.quantity
+        )
         return existing
 
     # Create new item
@@ -55,6 +79,7 @@ def add_item(
         notes=notes,
         position=position
     )
+    log_inventory_change('add', item.name, bin_code, quantity_after=item.quantity)
     return item
 
 
@@ -79,6 +104,8 @@ def get_items_in_bin(bin_code: str) -> QuerySet:
 def clear_inventory() -> int:
     """Delete all inventory items. Returns count of deleted items."""
     count = InventoryItem.objects.count()
+    if count > 0:
+        log_inventory_change('clear', 'ALL', '-', details={'items_deleted': count})
     InventoryItem.objects.all().delete()
     return count
 
@@ -93,6 +120,10 @@ def delete_item(item_id: int = None, name: str = None) -> bool:
         return False
 
     if item:
+        log_inventory_change(
+            'delete', item.name, item.bin.code,
+            quantity_before=item.quantity
+        )
         item.delete()
         return True
     return False

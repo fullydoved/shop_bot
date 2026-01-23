@@ -33,3 +33,28 @@ class InventoryItem(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class InventoryLog(models.Model):
+    """Audit log for inventory changes."""
+    ACTION_CHOICES = [
+        ('add', 'Item Added'),
+        ('update', 'Item Updated'),
+        ('delete', 'Item Deleted'),
+        ('move', 'Item Moved'),
+        ('clear', 'Inventory Cleared'),
+    ]
+
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    item_name = models.CharField(max_length=200)  # Denormalized - preserved even if item deleted
+    bin_code = models.CharField(max_length=10)    # Denormalized
+    quantity_before = models.PositiveIntegerField(null=True, blank=True)
+    quantity_after = models.PositiveIntegerField(null=True, blank=True)
+    details = models.JSONField(default=dict)      # Flexible storage for other changes
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"{self.action}: {self.item_name} @ {self.bin_code}"

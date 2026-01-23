@@ -85,6 +85,39 @@ def handle_delete_inventory_item(name: str, **kwargs) -> str:
     return f"Couldn't find '{name}' in inventory."
 
 
+def handle_get_inventory_log(limit: int = 10, **kwargs) -> str:
+    """Handle getting recent inventory activity log."""
+    from inventory.models import InventoryLog
+
+    logs = InventoryLog.objects.all()[:limit]
+    if not logs:
+        return "No inventory activity yet."
+
+    results = []
+    for log in logs:
+        # Format timestamp
+        ts = log.timestamp.strftime('%b %d %H:%M')
+
+        # Build details string
+        if log.action == 'move':
+            details = f"from {log.details.get('from_bin', '?')} to {log.bin_code}"
+        elif log.action == 'clear':
+            details = f"{log.details.get('items_deleted', 0)} items deleted"
+        elif log.quantity_before is not None and log.quantity_after is not None:
+            details = f"qty: {log.quantity_before} → {log.quantity_after}"
+        elif log.quantity_after is not None:
+            details = f"qty: {log.quantity_after}"
+        elif log.quantity_before is not None:
+            details = f"qty: {log.quantity_before}"
+        else:
+            details = f"bin {log.bin_code}"
+
+        action_label = log.get_action_display()
+        results.append(f"[{ts}] {action_label}: {log.item_name} ({details})")
+
+    return "Recent inventory activity:\n" + "\n".join(results)
+
+
 # --- Project handlers ---
 
 def handle_create_project(name: str, description: str = '', status: str = 'idea', **kwargs) -> str:
@@ -326,6 +359,7 @@ COMMAND_HANDLERS = {
     'find_inventory': handle_find_inventory,
     'clear_inventory': handle_clear_inventory,
     'delete_inventory_item': handle_delete_inventory_item,
+    'get_inventory_log': handle_get_inventory_log,
     'create_project': handle_create_project,
     'list_projects': handle_list_projects,
     'update_project': handle_update_project,
