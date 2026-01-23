@@ -2,6 +2,17 @@ from .claude_client import ClaudeClient
 from .prompts import SYSTEM_PROMPT, TOOL_DEFINITIONS
 from .commands import COMMAND_HANDLERS
 
+# Tools that return data to display directly (don't let Claude summarize)
+DISPLAY_TOOLS = {
+    'get_inventory_log',
+    'find_inventory',
+    'list_projects',
+    'list_tasks',
+    'get_pending_tasks',
+    'get_light_status',
+    'get_music_status',
+}
+
 
 class InputProcessor:
     """
@@ -104,6 +115,13 @@ class InputProcessor:
                 # Execute tools
                 tool_results = self._execute_tool_calls(tool_calls)
 
+                # Check if any tools are display tools (output shown directly)
+                display_outputs = []
+                for tc, tr in zip(tool_calls, tool_results):
+                    func_name = tc['function']['name']
+                    if func_name in DISPLAY_TOOLS and tr['result']:
+                        display_outputs.append(tr['result'])
+
                 # Add assistant's tool use to history
                 self.conversation_history.append({
                     'role': 'assistant',
@@ -140,6 +158,10 @@ class InputProcessor:
                     'role': 'assistant',
                     'content': final_text
                 })
+
+                # For display tools, append the raw output after Claude's response
+                if display_outputs:
+                    final_text = final_text + "\n\n" + "\n\n".join(display_outputs)
 
                 return final_text
 
