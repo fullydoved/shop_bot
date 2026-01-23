@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Stats Cards -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-700">Inventory Items</h3>
+        <p class="text-3xl font-bold text-green-600">{{ item_count }}</p>
+        <p class="text-gray-500">across {{ bin_count }} bins</p>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-700">Active Projects</h3>
+        <p class="text-3xl font-bold text-blue-600">{{ active_projects }}</p>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-700">Pending Tasks</h3>
+        <p class="text-3xl font-bold text-orange-600">{{ pending_tasks }}</p>
+    </div>
+
+    <!-- Chat Interface -->
+    <div class="lg:col-span-2 bg-white rounded-lg shadow">
+        <div class="p-4 border-b flex justify-between items-center">
+            <h2 class="text-xl font-semibold">Chat with Beavs</h2>
+            {% if chat_messages %}
+            <button type="button" onclick="clearChat()" class="text-sm text-gray-500 hover:text-red-600">
+                Clear history
+            </button>
+            {% endif %}
+        </div>
+        <div id="chat-messages" class="h-96 overflow-y-auto p-4 space-y-4">
+            {% if chat_messages %}
+                {% for msg in chat_messages %}
+                    {% if msg.role == 'user' %}
+                    <div class="bg-blue-50 p-3 rounded-lg ml-8">
+                        <p class="text-sm text-gray-500">You</p>
+                        <p>{{ msg.content }}</p>
+                    </div>
+                    {% else %}
+                    <div class="bg-green-100 p-3 rounded-lg">
+                        <p class="text-sm text-gray-500">Beavs</p>
+                        <p class="whitespace-pre-wrap">{{ msg.content }}</p>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+            <div class="bg-green-100 p-3 rounded-lg">
+                <p class="text-green-800">Hey there, bud! I'm Beavs, your shop assistant. How can I help you today, eh?</p>
+            </div>
+            {% endif %}
+        </div>
+        <div class="p-4 border-t">
+            <form id="chat-form" hx-post="/chat/" hx-target="#chat-messages" hx-swap="beforeend"
+                  hx-on::before-request="showUserMessage(event)"
+                  hx-on::after-request="hideLoading(); document.getElementById('chat-form').reset();">
+                {% csrf_token %}
+                <div class="flex gap-2">
+                    <input type="text" name="message" id="chat-input" placeholder="Type a message..."
+                           class="flex-1 border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                           autocomplete="off" required>
+                    <button type="submit" id="send-btn" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400">
+                        Send
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Recent Tasks -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="p-4 border-b">
+            <h2 class="text-xl font-semibold">Pending Tasks</h2>
+        </div>
+        <div class="p-4">
+            {% if tasks %}
+            <ul class="space-y-2">
+                {% for task in tasks %}
+                <li class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full
+                        {% if task.priority == 'high' %}bg-red-500
+                        {% elif task.priority == 'medium' %}bg-yellow-500
+                        {% else %}bg-gray-400{% endif %}">
+                    </span>
+                    <span>{{ task.title }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p class="text-gray-500">No pending tasks. Nice work!</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+function showUserMessage(event) {
+    const input = document.getElementById('chat-input');
+    const message = input.value.trim();
+    if (!message) return;
+
+    const chatMessages = document.getElementById('chat-messages');
+
+    // Add user message immediately
+    const userDiv = document.createElement('div');
+    userDiv.className = 'bg-blue-50 p-3 rounded-lg ml-8';
+    userDiv.innerHTML = '<p class="text-sm text-gray-500">You</p><p>' + escapeHtml(message) + '</p>';
+    chatMessages.appendChild(userDiv);
+
+    // Add loading indicator
+    const loadingDiv = document.createElement('div');
+    loadingDiv.id = 'loading-indicator';
+    loadingDiv.className = 'bg-green-100 p-3 rounded-lg';
+    loadingDiv.innerHTML = `
+        <p class="text-sm text-gray-500">Beavs</p>
+        <p class="flex items-center gap-2">
+            <span class="inline-block animate-pulse">🦫</span>
+            <span class="text-gray-500 italic">Thinking, eh...</span>
+        </p>
+    `;
+    chatMessages.appendChild(loadingDiv);
+
+    // Scroll to bottom
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    // Disable button while loading
+    document.getElementById('send-btn').disabled = true;
+}
+
+function hideLoading() {
+    const loading = document.getElementById('loading-indicator');
+    if (loading) loading.remove();
+    document.getElementById('send-btn').disabled = false;
+
+    // Scroll to bottom after response
+    const chatMessages = document.getElementById('chat-messages');
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function clearChat() {
+    fetch('/chat/clear/', {
+        method: 'POST',
+        headers: { 'X-CSRFToken': '{{ csrf_token }}' }
+    }).then(() => {
+        location.reload();
+    });
+}
+
+// Scroll to bottom on page load if there are messages
+document.addEventListener('DOMContentLoaded', function() {
+    const chatMessages = document.getElementById('chat-messages');
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+});
+</script>
+{% endblock %}

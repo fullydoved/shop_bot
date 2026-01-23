@@ -1,0 +1,11 @@
+services:
+  beavs:
+    build: .
+    network_mode: host
+    volumes:
+      - ./data:/app/data
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=shop_bot.settings
+    restart: unless-stopped

@@ -1,0 +1,34 @@
+# Virtual environment
+venv/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Django
+*.sqlite3
+staticfiles/
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Data (local development)
+data/*.sqlite3
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+
+# Claude Code
+.claude/

@@ -1,0 +1,39 @@
+<div class="p-4 flex items-center gap-4 task-row" id="task-row-{{ task.id }}">
+    <select name="priority" class="w-20 border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            onchange="markTaskDirty({{ task.id }})">
+        <option value="low" {% if task.priority == 'low' %}selected{% endif %}>Low</option>
+        <option value="medium" {% if task.priority == 'medium' %}selected{% endif %}>Medium</option>
+        <option value="high" {% if task.priority == 'high' %}selected{% endif %}>High</option>
+    </select>
+    <input type="text" name="title" value="{{ task.title }}"
+           class="flex-1 border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-green-500 {% if task.status == 'done' %}line-through text-gray-400{% endif %}"
+           onchange="markTaskDirty({{ task.id }})">
+    <select name="project_id" class="w-32 border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            onchange="markTaskDirty({{ task.id }})">
+        <option value="">No project</option>
+        {% for project in projects %}
+        <option value="{{ project.id }}" {% if task.project_id == project.id %}selected{% endif %}>{{ project.name }}</option>
+        {% endfor %}
+    </select>
+    <select name="status" class="w-28 border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            onchange="markTaskDirty({{ task.id }})">
+        <option value="pending" {% if task.status == 'pending' %}selected{% endif %}>Pending</option>
+        <option value="in_progress" {% if task.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+        <option value="done" {% if task.status == 'done' %}selected{% endif %}>Done</option>
+    </select>
+    <div class="flex items-center gap-2">
+        <button type="button" onclick="saveTask({{ task.id }})"
+                class="save-btn hidden text-green-600 hover:text-green-800" data-task-id="{{ task.id }}" title="Save">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+        </button>
+        <button type="button" onclick="deleteTask({{ task.id }})"
+                class="text-red-400 hover:text-red-600" title="Delete">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+        </button>
+        <span class="status-msg text-sm" data-task-id="{{ task.id }}"></span>
+    </div>
+</div>

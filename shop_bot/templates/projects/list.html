@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Projects{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow">
+    <div class="p-4 border-b flex justify-between items-center">
+        <h1 class="text-2xl font-semibold">Projects</h1>
+        <a href="{% url 'tasks' %}" class="text-green-600 hover:text-green-800">View All Tasks</a>
+    </div>
+
+    <div id="projects-list" class="divide-y">
+        {% for project in projects %}
+        <a href="{% url 'project_detail' project.id %}" class="block p-4 hover:bg-gray-50 transition-colors">
+            <div class="flex justify-between items-start">
+                <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-gray-900">{{ project.name }}</h3>
+                    {% if project.description %}
+                    <p class="text-gray-500 text-sm mt-1">{{ project.description|truncatewords:20 }}</p>
+                    {% endif %}
+                    <p class="text-gray-400 text-sm mt-2">
+                        {{ project.tasks.count }} task{{ project.tasks.count|pluralize }}
+                    </p>
+                </div>
+                <span class="px-3 py-1 rounded-full text-sm
+                    {% if project.status == 'active' %}bg-green-100 text-green-800
+                    {% elif project.status == 'paused' %}bg-yellow-100 text-yellow-800
+                    {% elif project.status == 'completed' %}bg-blue-100 text-blue-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ project.get_status_display }}
+                </span>
+            </div>
+        </a>
+        {% empty %}
+        <div class="p-8 text-center text-gray-500">
+            No projects yet. Create one through the chat or below!
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Add new project -->
+    <div class="p-4 border-t bg-gray-50">
+        <div class="flex gap-4 items-center">
+            <input type="text" id="new-project-name" placeholder="New project name..."
+                   class="flex-1 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+            <select id="new-project-status" class="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                <option value="idea">Idea</option>
+                <option value="active">Active</option>
+            </select>
+            <button type="button" onclick="addProject()"
+                    class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+                Add Project
+            </button>
+            <span id="new-project-status-msg" class="text-sm"></span>
+        </div>
+    </div>
+</div>
+
+<script>
+const csrfToken = '{{ csrf_token }}';
+
+function addProject() {
+    const name = document.getElementById('new-project-name').value.trim();
+    const status = document.getElementById('new-project-status-msg');
+
+    if (!name) {
+        status.innerHTML = '<span class="text-red-600">Name required</span>';
+        setTimeout(() => { status.innerHTML = ''; }, 2000);
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', csrfToken);
+    formData.append('name', name);
+    formData.append('status', document.getElementById('new-project-status').value);
+
+    fetch('/projects/create/', { method: 'POST', body: formData })
+        .then(r => {
+            if (r.ok) {
+                location.reload();
+            }
+        })
+        .catch(() => { status.innerHTML = '<span class="text-red-600">Error!</span>'; });
+}
+</script>
+{% endblock %}

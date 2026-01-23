@@ -1,0 +1,271 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventory{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow">
+    <div class="p-4 border-b flex justify-between items-center">
+        <h1 class="text-2xl font-semibold">Inventory</h1>
+        <form method="get" class="flex gap-2">
+            <input type="text" name="q" value="{{ query }}" placeholder="Search items..."
+                   class="border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+            <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                Search
+            </button>
+        </form>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-4 py-3 text-left">Item</th>
+                    <th class="px-4 py-3 text-left">Bin</th>
+                    <th class="px-4 py-3 text-left">Category</th>
+                    <th class="px-4 py-3 text-left">Quantity</th>
+                    <th class="px-4 py-3 text-left w-24">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="inventory-tbody" class="divide-y">
+                {% for item in items %}
+                {% include 'inventory/item_row.html' %}
+                {% empty %}
+                <tr id="empty-row">
+                    <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                        No items found. Add one below or through the chat!
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot class="bg-gray-50">
+                <tr id="new-item-row">
+                    <td class="px-4 py-2">
+                        <input type="text" id="new-name" placeholder="New item name..."
+                               class="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                    </td>
+                    <td class="px-4 py-2">
+                        <select id="new-bin" class="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <option value="">Select bin</option>
+                            {% for bin in bins %}
+                            <option value="{{ bin.id }}">{{ bin.code }}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                    <td class="px-4 py-2">
+                        <select id="new-category" class="category-select border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                                onchange="handleNewCategoryChange(this)">
+                            <option value="">--</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat }}">{{ cat }}</option>
+                            {% endfor %}
+                            <option value="__new__">+ New</option>
+                        </select>
+                        <input type="text" id="new-category-input" placeholder="New..."
+                               class="hidden w-20 border rounded px-2 py-1 text-sm mt-1 focus:outline-none focus:ring-2 focus:ring-green-500">
+                    </td>
+                    <td class="px-4 py-2">
+                        <div class="flex items-center gap-1">
+                            <input type="number" id="new-quantity" placeholder="Qty"
+                                   class="w-16 border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <select id="new-unit" class="w-16 border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                                <option value="pcs" selected>pcs</option>
+                                <option value="kg">kg</option>
+                                <option value="g">g</option>
+                                <option value="m">m</option>
+                                <option value="cm">cm</option>
+                                <option value="ft">ft</option>
+                                <option value="in">in</option>
+                                <option value="L">L</option>
+                                <option value="mL">mL</option>
+                                <option value="box">box</option>
+                                <option value="roll">roll</option>
+                                <option value="set">set</option>
+                            </select>
+                        </div>
+                    </td>
+                    <td class="px-4 py-2">
+                        <button type="button" onclick="addNewItem()"
+                                class="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">
+                            Add
+                        </button>
+                        <span id="new-item-status" class="text-sm ml-2"></span>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+<script>
+const csrfToken = '{{ csrf_token }}';
+
+function markRowDirty(itemId) {
+    const saveBtn = document.querySelector(`.save-btn[data-item-id="${itemId}"]`);
+    if (saveBtn) saveBtn.classList.remove('hidden');
+}
+
+function handleCategoryChange(select, itemId) {
+    const row = document.getElementById(`item-row-${itemId}`);
+    const newInput = row.querySelector('.new-category-input');
+
+    if (select.value === '__new__') {
+        newInput.classList.remove('hidden');
+        newInput.focus();
+    } else {
+        newInput.classList.add('hidden');
+        newInput.value = '';
+    }
+    markRowDirty(itemId);
+}
+
+function handleNewCategoryChange(select) {
+    const newInput = document.getElementById('new-category-input');
+    if (select.value === '__new__') {
+        newInput.classList.remove('hidden');
+        newInput.focus();
+    } else {
+        newInput.classList.add('hidden');
+        newInput.value = '';
+    }
+}
+
+function saveRow(itemId) {
+    const row = document.getElementById(`item-row-${itemId}`);
+    const saveBtn = row.querySelector('.save-btn');
+    const status = row.querySelector('.status-msg');
+
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', csrfToken);
+    formData.append('name', row.querySelector('input[name="name"]').value);
+    formData.append('bin_id', row.querySelector('select[name="bin_id"]').value);
+    formData.append('quantity', row.querySelector('input[name="quantity"]').value);
+    formData.append('unit', row.querySelector('select[name="unit"]').value);
+
+    const categorySelect = row.querySelector('select[name="category"]');
+    const newCategoryInput = row.querySelector('input[name="new_category"]');
+
+    if (categorySelect.value === '__new__' && newCategoryInput.value.trim()) {
+        formData.append('new_category', newCategoryInput.value.trim());
+    } else {
+        formData.append('category', categorySelect.value);
+    }
+
+    fetch(`/inventory/${itemId}/`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.text())
+    .then(html => {
+        status.innerHTML = html;
+        saveBtn.classList.add('hidden');
+
+        // Add new category to all dropdowns if created
+        if (categorySelect.value === '__new__' && newCategoryInput.value.trim()) {
+            const newCat = newCategoryInput.value.trim();
+            addCategoryToDropdowns(newCat);
+            categorySelect.value = newCat;
+            newCategoryInput.classList.add('hidden');
+            newCategoryInput.value = '';
+        }
+
+        setTimeout(() => { status.innerHTML = ''; }, 2000);
+    })
+    .catch(() => {
+        status.innerHTML = '<span class="text-red-600 text-sm">Error!</span>';
+    });
+}
+
+function deleteRow(itemId) {
+    if (!confirm('Delete this item?')) return;
+
+    fetch(`/inventory/${itemId}/delete/`, {
+        method: 'DELETE',
+        headers: { 'X-CSRFToken': csrfToken }
+    })
+    .then(response => {
+        if (response.ok) {
+            document.getElementById(`item-row-${itemId}`).remove();
+        }
+    });
+}
+
+function addNewItem() {
+    const name = document.getElementById('new-name').value.trim();
+    const binId = document.getElementById('new-bin').value;
+    const status = document.getElementById('new-item-status');
+
+    if (!name || !binId) {
+        status.innerHTML = '<span class="text-red-600">Name and bin required</span>';
+        setTimeout(() => { status.innerHTML = ''; }, 2000);
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', csrfToken);
+    formData.append('name', name);
+    formData.append('bin_id', binId);
+    formData.append('quantity', document.getElementById('new-quantity').value);
+    formData.append('unit', document.getElementById('new-unit').value);
+
+    const categorySelect = document.getElementById('new-category');
+    const newCategoryInput = document.getElementById('new-category-input');
+
+    if (categorySelect.value === '__new__' && newCategoryInput.value.trim()) {
+        formData.append('category', newCategoryInput.value.trim());
+    } else if (categorySelect.value !== '__new__') {
+        formData.append('category', categorySelect.value);
+    }
+
+    fetch('/inventory/create/', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.text())
+    .then(html => {
+        // Remove empty row if exists
+        const emptyRow = document.getElementById('empty-row');
+        if (emptyRow) emptyRow.remove();
+
+        // Add new row to tbody
+        document.getElementById('inventory-tbody').insertAdjacentHTML('beforeend', html);
+
+        // Add new category to dropdowns if created
+        if (categorySelect.value === '__new__' && newCategoryInput.value.trim()) {
+            addCategoryToDropdowns(newCategoryInput.value.trim());
+        }
+
+        // Clear form
+        document.getElementById('new-name').value = '';
+        document.getElementById('new-bin').value = '';
+        document.getElementById('new-category').value = '';
+        document.getElementById('new-category-input').value = '';
+        document.getElementById('new-category-input').classList.add('hidden');
+        document.getElementById('new-quantity').value = '';
+        document.getElementById('new-unit').value = '';
+
+        status.innerHTML = '<span class="text-green-600">Added!</span>';
+        setTimeout(() => { status.innerHTML = ''; }, 2000);
+    })
+    .catch(() => {
+        status.innerHTML = '<span class="text-red-600">Error!</span>';
+    });
+}
+
+function addCategoryToDropdowns(newCat) {
+    document.querySelectorAll('.category-select').forEach(sel => {
+        const exists = Array.from(sel.options).some(opt => opt.value === newCat);
+        if (!exists) {
+            const option = document.createElement('option');
+            option.value = newCat;
+            option.textContent = newCat;
+            const newOption = sel.querySelector('option[value="__new__"]');
+            if (newOption) {
+                sel.insertBefore(option, newOption);
+            } else {
+                sel.appendChild(option);
+            }
+        }
+    });
+}
+</script>
+{% endblock %}

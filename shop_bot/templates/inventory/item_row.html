@@ -1,0 +1,71 @@
+<tr class="hover:bg-gray-50 item-row" data-item-id="{{ item.id }}" id="item-row-{{ item.id }}">
+    <td class="px-4 py-2">
+        <input type="text" name="name" value="{{ item.name }}"
+               class="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+               onchange="markRowDirty({{ item.id }})">
+    </td>
+    <td class="px-4 py-2">
+        <select name="bin_id" class="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                onchange="markRowDirty({{ item.id }})">
+            {% for bin in bins %}
+            <option value="{{ bin.id }}" {% if bin.id == item.bin_id %}selected{% endif %}>{{ bin.code }}</option>
+            {% endfor %}
+        </select>
+    </td>
+    <td class="px-4 py-2">
+        <div class="flex items-center gap-1">
+            <select name="category" class="category-select border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    data-item-id="{{ item.id }}"
+                    onchange="handleCategoryChange(this, {{ item.id }})">
+                <option value="">--</option>
+                {% for cat in categories %}
+                <option value="{{ cat }}" {% if cat == item.category %}selected{% endif %}>{{ cat }}</option>
+                {% endfor %}
+                <option value="__new__">+ New</option>
+            </select>
+            <input type="text" name="new_category" placeholder="New..."
+                   class="new-category-input hidden w-20 border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                   data-item-id="{{ item.id }}"
+                   onchange="markRowDirty({{ item.id }})">
+        </div>
+    </td>
+    <td class="px-4 py-2">
+        <div class="flex items-center gap-1">
+            <input type="number" name="quantity" value="{{ item.quantity|default:'' }}"
+                   class="w-16 border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                   onchange="markRowDirty({{ item.id }})">
+            <select name="unit" class="w-16 border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    onchange="markRowDirty({{ item.id }})">
+                <option value="pcs" {% if item.unit == 'pcs' or not item.unit %}selected{% endif %}>pcs</option>
+                <option value="kg" {% if item.unit == 'kg' %}selected{% endif %}>kg</option>
+                <option value="g" {% if item.unit == 'g' %}selected{% endif %}>g</option>
+                <option value="m" {% if item.unit == 'm' %}selected{% endif %}>m</option>
+                <option value="cm" {% if item.unit == 'cm' %}selected{% endif %}>cm</option>
+                <option value="ft" {% if item.unit == 'ft' %}selected{% endif %}>ft</option>
+                <option value="in" {% if item.unit == 'in' %}selected{% endif %}>in</option>
+                <option value="L" {% if item.unit == 'L' %}selected{% endif %}>L</option>
+                <option value="mL" {% if item.unit == 'mL' %}selected{% endif %}>mL</option>
+                <option value="box" {% if item.unit == 'box' %}selected{% endif %}>box</option>
+                <option value="roll" {% if item.unit == 'roll' %}selected{% endif %}>roll</option>
+                <option value="set" {% if item.unit == 'set' %}selected{% endif %}>set</option>
+            </select>
+        </div>
+    </td>
+    <td class="px-4 py-2">
+        <div class="flex items-center gap-2">
+            <button type="button" onclick="saveRow({{ item.id }})"
+                    class="save-btn hidden text-green-600 hover:text-green-800" data-item-id="{{ item.id }}" title="Save">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+            </button>
+            <button type="button" onclick="deleteRow({{ item.id }})"
+                    class="text-red-400 hover:text-red-600" title="Delete">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                </svg>
+            </button>
+            <span class="status-msg text-sm" data-item-id="{{ item.id }}"></span>
+        </div>
+    </td>
+</tr>

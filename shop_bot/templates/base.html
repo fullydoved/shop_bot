@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Beavs{% endblock %} - Shop Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <nav class="bg-green-700 text-white p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="/" class="text-2xl font-bold">🦫 Beavs</a>
+            <div class="space-x-4">
+                <a href="/" class="hover:underline">Dashboard</a>
+                <a href="/inventory/" class="hover:underline">Inventory</a>
+                <a href="/projects/" class="hover:underline">Projects</a>
+                <a href="/tasks/" class="hover:underline">Tasks</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="bg-gray-200 p-4 mt-8 text-center text-gray-600">
+        <p>Beavs - Shop Assistant for Maple Leaf Makers</p>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

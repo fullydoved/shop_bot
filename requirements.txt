@@ -1,0 +1,13 @@
+Django>=5.0
+anthropic>=0.40
+python-dotenv>=1.0
+rich>=13.0
+django-htmx>=1.17
+
+# Optional: for local LLM fallback
+ollama>=0.4
+
+# Dev dependencies
+pytest>=8.0
+pytest-django>=4.8
+ruff>=0.5

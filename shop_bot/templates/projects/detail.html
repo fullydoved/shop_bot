@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Project Header -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="p-4 border-b">
+            <div class="flex justify-between items-start">
+                <div>
+                    <a href="{% url 'projects' %}" class="text-sm text-gray-500 hover:text-green-600">&larr; All Projects</a>
+                    <h1 class="text-2xl font-semibold mt-2" id="project-name">{{ project.name }}</h1>
+                </div>
+                <div class="flex items-center gap-2">
+                    <select id="project-status" class="border rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                            onchange="updateProject()">
+                        <option value="idea" {% if project.status == 'idea' %}selected{% endif %}>Idea</option>
+                        <option value="active" {% if project.status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="paused" {% if project.status == 'paused' %}selected{% endif %}>Paused</option>
+                        <option value="completed" {% if project.status == 'completed' %}selected{% endif %}>Completed</option>
+                    </select>
+                    <button onclick="deleteProject()" class="text-red-400 hover:text-red-600" title="Delete Project">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                    <span id="project-status-msg" class="text-sm"></span>
+                </div>
+            </div>
+            {% if project.description %}
+            <p class="text-gray-600 mt-2">{{ project.description }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pending Tasks -->
+    <div class="bg-white rounded-lg shadow">
+        <div class="p-4 border-b">
+            <h2 class="text-xl font-semibold">Tasks ({{ pending_tasks.count }})</h2>
+        </div>
+        <div id="pending-tasks" class="divide-y">
+            {% for task in pending_tasks %}
+            {% include 'projects/task_row_detail.html' %}
+            {% empty %}
+            <div id="no-pending" class="p-8 text-center text-gray-500">
+                No pending tasks. Add one below!
+            </div>
+            {% endfor %}
+        </div>
+        <!-- Add task -->
+        <div class="p-4 border-t bg-gray-50">
+            <div class="flex items-center gap-2">
+                <select id="new-task-priority" class="border rounded px-2 py-1 text-sm">
+                    <option value="low">Low</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="high">High</option>
+                </select>
+                <input type="text" id="new-task-title" placeholder="New task..."
+                       class="flex-1 border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-green-500">
+                <button onclick="addTask()" class="bg-green-600 text-white px-4 py-1 rounded text-sm hover:bg-green-700">
+                    Add Task
+                </button>
+                <span id="new-task-status-msg" class="text-sm"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Completed Tasks -->
+    {% if completed_tasks %}
+    <div class="bg-white rounded-lg shadow">
+        <div class="p-4 border-b">
+            <h2 class="text-xl font-semibold text-gray-500">Completed ({{ completed_tasks.count }})</h2>
+        </div>
+        <div id="completed-tasks" class="divide-y">
+            {% for task in completed_tasks %}
+            {% include 'projects/task_row_detail.html' %}
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+const csrfToken = '{{ csrf_token }}';
+const projectId = {{ project.id }};
+
+function updateProject() {
+    const status = document.getElementById('project-status').value;
+    const msg = document.getElementById('project-status-msg');
+
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', csrfToken);
+    formData.append('name', '{{ project.name }}');
+    formData.append('status', status);
+
+    fetch(`/projects/${projectId}/edit/`, { method: 'POST', body: formData })
+        .then(r => r.text())
+        .then(html => {
+            msg.innerHTML = html;
+            setTimeout(() => { msg.innerHTML = ''; }, 2000);
+        });
+}
+
+function deleteProject() {
+    if (!confirm('Delete this project? Tasks will be kept but unlinked.')) return;
+
+    fetch(`/projects/${projectId}/delete/`, {
+        method: 'DELETE',
+        headers: { 'X-CSRFToken': csrfToken }
+    }).then(r => {
+        if (r.ok) window.location.href = '/projects/';
+    });
+}
+
+function markTaskDirty(taskId) {
+    const btn = document.querySelector(`.save-btn[data-task-id="${taskId}"]`);
+    if (btn) btn.classList.remove('hidden');
+}
+
+function saveTask(taskId) {
+    const row = document.getElementById(`task-row-${taskId}`);
+    const btn = row.querySelector('.save-btn');
+    const status = row.querySelector('.status-msg');
+
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', csrfToken);
+    formData.append('title', row.querySelector('input[name="title"]').value);
+    formData.append('priority', row.querySelector('select[name="priority"]').value);
+    formData.append('status', row.querySelector('select[name="status"]').value);
+    formData.append('notes', row.querySelector('textarea[name="notes"]').value);
+    formData.append('project_id', projectId);
+
+    fetch(`/tasks/${taskId}/`, { method: 'POST', body: formData })
+        .then(r => r.text())
+        .then(html => {
+            status.innerHTML = html;
+            btn.classList.add('hidden');
+            setTimeout(() => { status.innerHTML = ''; }, 2000);
+            // Reload if status changed to done
+            if (row.querySelector('select[name="status"]').value === 'done') {
+                setTimeout(() => location.reload(), 500);
+            }
+        });
+}
+
+function deleteTask(taskId) {
+    if (!confirm('Delete this task?')) return;
+
+    fetch(`/tasks/${taskId}/delete/`, {
+        method: 'DELETE',
+        headers: { 'X-CSRFToken': csrfToken }
+    }).then(r => {
+        if (r.ok) document.getElementById(`task-row-${taskId}`).remove();
+    });
+}
+
+function addTask() {
+    const title = document.getElementById('new-task-title').value.trim();
+    const status = document.getElementById('new-task-status-msg');
+
+    if (!title) {
+        status.innerHTML = '<span class="text-red-600">Title required</span>';
+        setTimeout(() => { status.innerHTML = ''; }, 2000);
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', csrfToken);
+    formData.append('title', title);
+    formData.append('priority', document.getElementById('new-task-priority').value);
+    formData.append('project_id', projectId);
+
+    fetch('/tasks/create/', { method: 'POST', body: formData })
+        .then(r => r.text())
+        .then(html => {
+            const noPending = document.getElementById('no-pending');
+            if (noPending) noPending.remove();
+            document.getElementById('pending-tasks').insertAdjacentHTML('beforeend', html);
+            document.getElementById('new-task-title').value = '';
+            status.innerHTML = '<span class="text-green-600">Added!</span>';
+            setTimeout(() => { status.innerHTML = ''; }, 2000);
+        });
+}
+</script>
+{% endblock %}

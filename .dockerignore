@@ -1,0 +1,36 @@
+# Virtual environment
+venv/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Data (handled via volumes)
+data/
+*.sqlite3
+
+# Other
+.env
+.env.local
+*.log
+.DS_Store
+.claude/
