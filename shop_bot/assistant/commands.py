@@ -85,6 +85,41 @@ def handle_delete_inventory_item(name: str, **kwargs) -> str:
     return f"Couldn't find '{name}' in inventory."
 
 
+def handle_use_inventory_item(name: str, quantity: int, **kwargs) -> str:
+    """Handle removing/using a specific quantity of an item."""
+    from inventory.models import InventoryItem
+    from inventory.services import log_inventory_change
+
+    item = InventoryItem.objects.filter(name__icontains=name).first()
+    if not item:
+        return f"Couldn't find '{name}' in inventory."
+
+    if item.quantity is None:
+        return f"{item.name} doesn't have a tracked quantity, bud."
+
+    old_qty = item.quantity
+    new_qty = max(0, old_qty - quantity)
+
+    if new_qty == 0:
+        # Remove the item entirely
+        log_inventory_change(
+            'delete', item.name, item.bin.code,
+            quantity_before=old_qty,
+            details={'reason': 'used_last'}
+        )
+        item.delete()
+        return f"Used the last {old_qty} {item.name} from bin {item.bin.code}. Item removed."
+
+    item.quantity = new_qty
+    item.save()
+    log_inventory_change(
+        'update', item.name, item.bin.code,
+        quantity_before=old_qty, quantity_after=new_qty,
+        details={'used': quantity}
+    )
+    return f"Used {quantity} {item.name}. {new_qty} remaining in bin {item.bin.code}."
+
+
 def handle_get_inventory_log(limit: int = 10, **kwargs) -> str:
     """Handle getting recent inventory activity log."""
     from inventory.models import InventoryLog
@@ -359,6 +394,7 @@ COMMAND_HANDLERS = {
     'find_inventory': handle_find_inventory,
     'clear_inventory': handle_clear_inventory,
     'delete_inventory_item': handle_delete_inventory_item,
+    'use_inventory_item': handle_use_inventory_item,
     'get_inventory_log': handle_get_inventory_log,
     'create_project': handle_create_project,
     'list_projects': handle_list_projects,

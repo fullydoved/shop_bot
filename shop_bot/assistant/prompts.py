@@ -92,6 +92,21 @@ TOOL_DEFINITIONS = [
     {
         'type': 'function',
         'function': {
+            'name': 'use_inventory_item',
+            'description': 'Remove/use a specific quantity of an item from inventory',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'name': {'type': 'string', 'description': 'Item name (partial match OK)'},
+                    'quantity': {'type': 'integer', 'description': 'Quantity to remove/use'}
+                },
+                'required': ['name', 'quantity']
+            }
+        }
+    },
+    {
+        'type': 'function',
+        'function': {
             'name': 'get_inventory_log',
             'description': 'Get recent inventory activity log (adds, updates, deletes, moves)',
             'parameters': {
