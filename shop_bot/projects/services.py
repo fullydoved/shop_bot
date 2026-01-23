@@ -44,7 +44,7 @@ def create_task(
     if project_id is not None:
         project = Project.objects.get(pk=project_id)
     elif project_name:
-        project = Project.objects.filter(name__iexact=project_name).first()
+        project = Project.objects.filter(name__icontains=project_name).first()
 
     return Task.objects.create(
         title=title,
@@ -59,11 +59,13 @@ def get_pending_tasks() -> QuerySet:
     return Task.objects.filter(status='pending')
 
 
-def get_all_tasks(status: str = None) -> QuerySet:
-    """Get all tasks, optionally filtered by status."""
+def get_all_tasks(status: str = None, project_name: str = None) -> QuerySet:
+    """Get all tasks, optionally filtered by status and/or project."""
     qs = Task.objects.all().order_by('status', '-priority')
     if status:
         qs = qs.filter(status=status)
+    if project_name:
+        qs = qs.filter(project__name__icontains=project_name)
     return qs
 
 
@@ -72,7 +74,7 @@ def update_task(task_id: int, **kwargs) -> Task:
     task = Task.objects.get(pk=task_id)
     for key, value in kwargs.items():
         if key == 'project_name' and value:
-            task.project = Project.objects.filter(name__iexact=value).first()
+            task.project = Project.objects.filter(name__icontains=value).first()
         elif hasattr(task, key) and value is not None:
             setattr(task, key, value)
     task.save()

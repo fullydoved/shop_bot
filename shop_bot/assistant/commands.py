@@ -1,4 +1,4 @@
-from inventory.services import add_item, find_items, get_or_create_bin
+from inventory.services import add_item, find_items, get_or_create_bin, clear_inventory, delete_item
 from projects.services import (
     create_project, list_projects, update_project, delete_project,
     create_task, get_pending_tasks, get_all_tasks, update_task, complete_task, delete_task,
@@ -6,28 +6,44 @@ from projects.services import (
 from projects.models import Project, Task
 
 
-def handle_add_inventory_items(bin_code: str, items: list, **kwargs) -> str:
-    """Handle adding inventory items to a bin."""
-    get_or_create_bin(bin_code)
-    added = []
+def handle_add_inventory_items(bin_code: str, items: list, divider_type: str = None, **kwargs) -> str:
+    """Handle adding or updating inventory items in a bin."""
+    from inventory.models import InventoryItem
+    from inventory.services import set_bin_divider
+
+    bin_obj = get_or_create_bin(bin_code)
+
+    # Set divider type if specified
+    if divider_type:
+        set_bin_divider(bin_code, divider_type)
+
+    results = []
     for item in items:
         if isinstance(item, dict):
             name = item.get('name', str(item))
             category = item.get('category', '')
             quantity = item.get('quantity')
+            position = item.get('position', '')
         else:
             name = str(item)
             category = ''
             quantity = None
+            position = ''
+
+        # Check if exists before adding (to report correctly)
+        existed = InventoryItem.objects.filter(name__iexact=name, bin=bin_obj).exists()
 
         inv_item = add_item(
             name=name,
             bin_code=bin_code,
             category=category,
             quantity=quantity,
+            position=position,
         )
-        added.append(inv_item.name)
-    return f"Added {len(added)} item(s) to bin {bin_code}: {', '.join(added)}"
+        action = "updated" if existed else "added"
+        pos_info = f" [{inv_item.position}]" if inv_item.position else ""
+        results.append(f"{inv_item.name}{pos_info} ({action})")
+    return f"Bin {bin_code}: {', '.join(results)}"
 
 
 def handle_find_inventory(query: str, **kwargs) -> str:
@@ -38,11 +54,27 @@ def handle_find_inventory(query: str, **kwargs) -> str:
 
     results = []
     for item in items[:10]:
-        loc = f"in bin {item.bin.code}"
-        qty = f" ({item.quantity} {item.unit})" if item.quantity else ""
+        pos = f" ({item.position})" if item.position else ""
+        loc = f"in bin {item.bin.code}{pos}"
+        qty = f" - {item.quantity} {item.unit}" if item.quantity else ""
         results.append(f"- {item.name}{qty} {loc}")
 
     return f"Found {items.count()} item(s):\n" + "\n".join(results)
+
+
+def handle_clear_inventory(**kwargs) -> str:
+    """Handle clearing all inventory items."""
+    count = clear_inventory()
+    if count == 0:
+        return "Inventory was already empty, bud."
+    return f"Cleared {count} item(s) from inventory."
+
+
+def handle_delete_inventory_item(name: str, **kwargs) -> str:
+    """Handle deleting a specific inventory item."""
+    if delete_item(name=name):
+        return f"Deleted '{name}' from inventory."
+    return f"Couldn't find '{name}' in inventory."
 
 
 # --- Project handlers ---
@@ -122,10 +154,12 @@ def handle_get_pending_tasks(**kwargs) -> str:
     return f"Pending tasks:\n" + "\n".join(results)
 
 
-def handle_list_tasks(status: str = None, **kwargs) -> str:
+def handle_list_tasks(status: str = None, project_name: str = None, **kwargs) -> str:
     """Handle listing all tasks."""
-    tasks = get_all_tasks(status)
+    tasks = get_all_tasks(status, project_name)
     if not tasks:
+        if project_name:
+            return f"No tasks found for project '{project_name}'."
         return "No tasks found."
 
     results = []
@@ -182,6 +216,8 @@ def handle_delete_task(title: str, **kwargs) -> str:
 COMMAND_HANDLERS = {
     'add_inventory_items': handle_add_inventory_items,
     'find_inventory': handle_find_inventory,
+    'clear_inventory': handle_clear_inventory,
+    'delete_inventory_item': handle_delete_inventory_item,
     'create_project': handle_create_project,
     'list_projects': handle_list_projects,
     'update_project': handle_update_project,

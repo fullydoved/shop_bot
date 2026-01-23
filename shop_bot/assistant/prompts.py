@@ -25,6 +25,7 @@ TOOL_DEFINITIONS = [
                 'type': 'object',
                 'properties': {
                     'bin_code': {'type': 'string', 'description': 'Bin location code (e.g., A1, B3)'},
+                    'divider_type': {'type': 'string', 'enum': ['none', 'vertical', 'horizontal'], 'description': 'Set bin divider type'},
                     'items': {
                         'type': 'array',
                         'items': {
@@ -33,6 +34,7 @@ TOOL_DEFINITIONS = [
                                 'name': {'type': 'string'},
                                 'quantity': {'type': 'integer'},
                                 'category': {'type': 'string'},
+                                'position': {'type': 'string', 'description': 'Position in bin: left, right, front, back, middle'},
                             },
                             'required': ['name']
                         }
@@ -53,6 +55,28 @@ TOOL_DEFINITIONS = [
                     'query': {'type': 'string', 'description': 'Search term for item name'}
                 },
                 'required': ['query']
+            }
+        }
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'clear_inventory',
+            'description': 'Delete ALL inventory items (use with caution)',
+            'parameters': {'type': 'object', 'properties': {}}
+        }
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'delete_inventory_item',
+            'description': 'Delete a specific item from inventory',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'name': {'type': 'string', 'description': 'Item name to delete (partial match OK)'}
+                },
+                'required': ['name']
             }
         }
     },
@@ -147,11 +171,12 @@ TOOL_DEFINITIONS = [
         'type': 'function',
         'function': {
             'name': 'list_tasks',
-            'description': 'List all tasks, optionally filtered by status',
+            'description': 'List all tasks, optionally filtered by status or project',
             'parameters': {
                 'type': 'object',
                 'properties': {
-                    'status': {'type': 'string', 'enum': ['pending', 'in_progress', 'done']}
+                    'status': {'type': 'string', 'enum': ['pending', 'in_progress', 'done']},
+                    'project_name': {'type': 'string', 'description': 'Filter tasks by project name'}
                 }
             }
         }

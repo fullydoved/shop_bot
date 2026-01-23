@@ -17,9 +17,32 @@ class InputProcessor:
         self.conversation_history = []
 
     def _trim_history(self):
-        """Keep only recent messages to control token costs."""
-        if len(self.conversation_history) > self.MAX_HISTORY_MESSAGES:
-            self.conversation_history = self.conversation_history[-self.MAX_HISTORY_MESSAGES:]
+        """Keep only recent messages to control token costs.
+
+        Be careful not to cut in the middle of a tool use sequence.
+        """
+        if len(self.conversation_history) <= self.MAX_HISTORY_MESSAGES:
+            return
+
+        # Start from the trim point and find a safe place to cut
+        # (should be at a user message that's not a tool_result)
+        trimmed = self.conversation_history[-self.MAX_HISTORY_MESSAGES:]
+
+        # If first message is a tool_result or assistant, we need to go back further
+        # to find a clean user message start
+        while trimmed and len(trimmed) > 2:
+            first = trimmed[0]
+            if first.get('role') == 'user':
+                content = first.get('content')
+                # Check if it's a tool_result (list of dicts with 'type': 'tool_result')
+                if isinstance(content, list) and content and isinstance(content[0], dict) and content[0].get('type') == 'tool_result':
+                    trimmed = trimmed[1:]  # Skip this, it's orphaned
+                else:
+                    break  # Good, it's a regular user message
+            else:
+                trimmed = trimmed[1:]  # Skip orphaned assistant message
+
+        self.conversation_history = trimmed
 
     def _execute_tool_calls(self, tool_calls: list) -> list:
         """Execute tool calls and return results."""
@@ -90,10 +113,12 @@ class InputProcessor:
                 # Add tool results to history
                 tool_result_content = []
                 for tc, tr in zip(tool_calls, tool_results):
+                    # Ensure content is never empty (API requirement)
+                    result_content = tr['result'] if tr['result'] else "Done"
                     tool_result_content.append({
                         'type': 'tool_result',
                         'tool_use_id': tc.get('id'),
-                        'content': tr['result']
+                        'content': str(result_content)
                     })
 
                 self.conversation_history.append({
@@ -108,7 +133,7 @@ class InputProcessor:
                     tools=TOOL_DEFINITIONS
                 )
 
-                final_text = self.client.get_response_text(final_response)
+                final_text = self.client.get_response_text(final_response) or "Done, eh!"
 
                 # Add final response to history
                 self.conversation_history.append({
@@ -120,7 +145,7 @@ class InputProcessor:
 
             else:
                 # Regular text response (no tools)
-                response_text = self.client.get_response_text(response)
+                response_text = self.client.get_response_text(response) or "I'm here, bud!"
                 self.conversation_history.append({
                     'role': 'assistant',
                     'content': response_text

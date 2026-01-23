@@ -91,9 +91,9 @@ docker compose restart
 ### Available Models
 | Model | ID | Cost (In/Out per MTok) |
 |-------|-----|------------------------|
-| Sonnet 4.5 | `claude-sonnet-4-5-20250929` | $3 / $15 |
-| Haiku 4.5 | `claude-haiku-4-5-20250929` | $1 / $5 |
-| Opus 4.5 | `claude-opus-4-5-20251101` | $5 / $25 |
+| Haiku 4.5 | `claude-haiku-4-5-20251001` | $1 / $5 |
+| Sonnet 4 | `claude-sonnet-4-20250514` | $3 / $15 |
+| Opus 4 | `claude-opus-4-20250514` | $15 / $75 |
 
 ## Web Pages
 
