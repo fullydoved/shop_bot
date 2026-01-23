@@ -1,19 +1,49 @@
 import io
+import urllib.request
 import wave
 from pathlib import Path
 
 from piper.voice import PiperVoice
 
-# Voice model path (downloaded on first use)
-VOICE_MODEL = Path(__file__).parent / "voices" / "en_US-ryan-medium.onnx"
+# Voice model configuration
+VOICE_NAME = "en_US-ryan-high"  # Options: medium, high, low
+VOICES_DIR = Path(__file__).parent / "voices"
+VOICE_MODEL = VOICES_DIR / f"{VOICE_NAME}.onnx"
+VOICE_CONFIG = VOICES_DIR / f"{VOICE_NAME}.onnx.json"
+
+# Hugging Face URL pattern for Piper voices
+HF_BASE = "https://huggingface.co/rhasspy/piper-voices/resolve/main"
 
 _voice = None
 
 
+def download_voice():
+    """Download voice model files if they don't exist."""
+    VOICES_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Parse voice name: en_US-ryan-high -> en/en_US/ryan/high
+    parts = VOICE_NAME.replace("-", "_").split("_")  # ['en', 'US', 'ryan', 'high']
+    lang = parts[0]  # en
+    locale = f"{parts[0]}_{parts[1]}"  # en_US
+    speaker = parts[2]  # ryan
+    quality = parts[3]  # high
+
+    base_url = f"{HF_BASE}/{lang}/{locale}/{speaker}/{quality}/{VOICE_NAME}"
+
+    for filepath, url in [(VOICE_MODEL, f"{base_url}.onnx"),
+                          (VOICE_CONFIG, f"{base_url}.onnx.json")]:
+        if not filepath.exists():
+            print(f"Downloading {filepath.name}...")
+            urllib.request.urlretrieve(url, filepath)
+            print(f"Downloaded {filepath.name}")
+
+
 def get_voice():
-    """Lazy-load the voice model."""
+    """Lazy-load the voice model, downloading if needed."""
     global _voice
     if _voice is None:
+        if not VOICE_MODEL.exists() or not VOICE_CONFIG.exists():
+            download_voice()
         _voice = PiperVoice.load(str(VOICE_MODEL))
     return _voice
 

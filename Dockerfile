@@ -24,6 +24,9 @@ COPY shop_bot/ .
 # Create data directory for SQLite persistence
 RUN mkdir -p /app/data
 
+# Download Piper TTS voice model at build time
+RUN python -c "from assistant.tts import download_voice; download_voice()"
+
 # Collect static files
 RUN python manage.py collectstatic --noinput || true
 

@@ -32,3 +32,7 @@ data/*.sqlite3
 
 # Claude Code
 .claude/
+
+# Piper TTS voice models (downloaded at build time)
+shop_bot/assistant/voices/*.onnx
+shop_bot/assistant/voices/*.onnx.json
