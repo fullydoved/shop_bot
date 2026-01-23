@@ -118,6 +118,37 @@ TOOL_DEFINITIONS = [
             }
         }
     },
+    # --- Bin management tools ---
+    {
+        'type': 'function',
+        'function': {
+            'name': 'find_empty_bins',
+            'description': 'Find bins that have no items (available for new storage)',
+            'parameters': {'type': 'object', 'properties': {}}
+        }
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'delete_bin',
+            'description': 'Delete a specific bin (must be empty)',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'bin_code': {'type': 'string', 'description': 'Bin code to delete (e.g., A1, B3)'}
+                },
+                'required': ['bin_code']
+            }
+        }
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'cleanup_empty_bins',
+            'description': 'Delete all empty bins',
+            'parameters': {'type': 'object', 'properties': {}}
+        }
+    },
     # --- Project tools ---
     {
         'type': 'function',

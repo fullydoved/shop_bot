@@ -153,6 +153,51 @@ def handle_get_inventory_log(limit: int = 10, **kwargs) -> str:
     return "Recent inventory activity:\n" + "\n".join(results)
 
 
+# --- Bin management handlers ---
+
+def handle_find_empty_bins(**kwargs) -> str:
+    """Handle finding empty bins."""
+    from inventory.models import Bin
+
+    empty_bins = Bin.objects.filter(items__isnull=True).order_by('code')
+    if not empty_bins:
+        return "No empty bins found. All bins have items in them."
+
+    bin_list = ", ".join(b.code for b in empty_bins)
+    return f"Empty bins available: {bin_list}"
+
+
+def handle_delete_bin(bin_code: str, **kwargs) -> str:
+    """Handle deleting a specific bin."""
+    from inventory.models import Bin
+
+    bin_obj = Bin.objects.filter(code__iexact=bin_code).first()
+    if not bin_obj:
+        return f"Bin '{bin_code}' not found."
+
+    item_count = bin_obj.items.count()
+    if item_count > 0:
+        return f"Can't delete bin {bin_obj.code} - it has {item_count} item(s) in it. Move or delete them first."
+
+    bin_obj.delete()
+    return f"Deleted empty bin {bin_code}."
+
+
+def handle_cleanup_empty_bins(**kwargs) -> str:
+    """Handle deleting all empty bins."""
+    from inventory.models import Bin
+
+    empty_bins = Bin.objects.filter(items__isnull=True)
+    count = empty_bins.count()
+
+    if count == 0:
+        return "No empty bins to clean up."
+
+    bin_codes = list(empty_bins.values_list('code', flat=True))
+    empty_bins.delete()
+    return f"Deleted {count} empty bin(s): {', '.join(bin_codes)}"
+
+
 # --- Project handlers ---
 
 def handle_create_project(name: str, description: str = '', status: str = 'idea', **kwargs) -> str:
@@ -396,6 +441,9 @@ COMMAND_HANDLERS = {
     'delete_inventory_item': handle_delete_inventory_item,
     'use_inventory_item': handle_use_inventory_item,
     'get_inventory_log': handle_get_inventory_log,
+    'find_empty_bins': handle_find_empty_bins,
+    'delete_bin': handle_delete_bin,
+    'cleanup_empty_bins': handle_cleanup_empty_bins,
     'create_project': handle_create_project,
     'list_projects': handle_list_projects,
     'update_project': handle_update_project,

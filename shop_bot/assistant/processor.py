@@ -6,6 +6,7 @@ from .commands import COMMAND_HANDLERS
 DISPLAY_TOOLS = {
     'get_inventory_log',
     'find_inventory',
+    'find_empty_bins',
     'list_projects',
     'list_tasks',
     'get_pending_tasks',
