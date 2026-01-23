@@ -45,10 +45,18 @@ def update_item(request, item_id):
     new_category = request.POST.get('new_category', '').strip()
     item.category = new_category if new_category else category
 
-    # Handle bin change
-    bin_id = request.POST.get('bin_id')
-    if bin_id:
-        item.bin_id = bin_id
+    # Handle bin change (existing or new)
+    new_bin = request.POST.get('new_bin', '').strip()
+    if new_bin:
+        bin_obj, _ = Bin.objects.get_or_create(code=new_bin.upper())
+        item.bin = bin_obj
+    else:
+        bin_id = request.POST.get('bin_id')
+        if bin_id:
+            item.bin_id = bin_id
+
+    # Handle position
+    item.position = request.POST.get('position', '').strip()
 
     item.save()
 
@@ -68,11 +76,16 @@ def create_item(request):
     """Create a new item."""
     name = request.POST.get('name', '').strip()
     bin_id = request.POST.get('bin_id')
+    new_bin = request.POST.get('new_bin', '').strip()
 
-    if not name or not bin_id:
+    if not name or (not bin_id and not new_bin):
         return HttpResponse('<span class="text-red-600 text-sm">Name and bin required</span>', status=400)
 
-    bin_obj = get_object_or_404(Bin, id=bin_id)
+    # Handle new bin or existing bin
+    if new_bin:
+        bin_obj, _ = Bin.objects.get_or_create(code=new_bin.upper())
+    else:
+        bin_obj = get_object_or_404(Bin, id=bin_id)
 
     item = InventoryItem.objects.create(
         name=name,
@@ -80,6 +93,7 @@ def create_item(request):
         quantity=request.POST.get('quantity') or None,
         unit=request.POST.get('unit', 'pcs').strip() or 'pcs',
         category=request.POST.get('category', '').strip(),
+        position=request.POST.get('position', '').strip(),
     )
 
     # Return the new row HTML

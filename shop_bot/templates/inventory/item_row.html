@@ -5,11 +5,30 @@
                onchange="markRowDirty({{ item.id }})">
     </td>
     <td class="px-4 py-2">
-        <select name="bin_id" class="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+        <div class="flex items-center gap-1">
+            <select name="bin_id" class="bin-select border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                    onchange="handleBinChange(this, {{ item.id }})">
+                {% for bin in bins %}
+                <option value="{{ bin.id }}" {% if bin.id == item.bin_id %}selected{% endif %}>{{ bin.code }}</option>
+                {% endfor %}
+                <option value="__new__">+ New</option>
+            </select>
+            <input type="text" name="new_bin" placeholder="e.g. A1"
+                   class="new-bin-input hidden w-16 border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                   onchange="markRowDirty({{ item.id }})">
+        </div>
+    </td>
+    <td class="px-4 py-2">
+        <select name="position" class="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
                 onchange="markRowDirty({{ item.id }})">
-            {% for bin in bins %}
-            <option value="{{ bin.id }}" {% if bin.id == item.bin_id %}selected{% endif %}>{{ bin.code }}</option>
-            {% endfor %}
+            <option value="" {% if not item.position %}selected{% endif %}>entire bin</option>
+            <option value="front" {% if item.position == 'front' %}selected{% endif %}>front</option>
+            <option value="back" {% if item.position == 'back' %}selected{% endif %}>back</option>
+            <option value="center" {% if item.position == 'center' %}selected{% endif %}>center</option>
+            <option value="left" {% if item.position == 'left' %}selected{% endif %}>left</option>
+            <option value="right" {% if item.position == 'right' %}selected{% endif %}>right</option>
+            <option value="top" {% if item.position == 'top' %}selected{% endif %}>top</option>
+            <option value="bottom" {% if item.position == 'bottom' %}selected{% endif %}>bottom</option>
         </select>
     </td>
     <td class="px-4 py-2">

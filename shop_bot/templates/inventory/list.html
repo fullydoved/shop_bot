@@ -21,6 +21,7 @@
                 <tr>
                     <th class="px-4 py-3 text-left">Item</th>
                     <th class="px-4 py-3 text-left">Bin</th>
+                    <th class="px-4 py-3 text-left">Position</th>
                     <th class="px-4 py-3 text-left">Category</th>
                     <th class="px-4 py-3 text-left">Quantity</th>
                     <th class="px-4 py-3 text-left w-24">Actions</th>
@@ -31,7 +32,7 @@
                 {% include 'inventory/item_row.html' %}
                 {% empty %}
                 <tr id="empty-row">
-                    <td colspan="5" class="px-4 py-8 text-center text-gray-500">
+                    <td colspan="6" class="px-4 py-8 text-center text-gray-500">
                         No items found. Add one below or through the chat!
                     </td>
                 </tr>
@@ -44,11 +45,29 @@
                                class="w-full border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
                     </td>
                     <td class="px-4 py-2">
-                        <select id="new-bin" class="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
-                            <option value="">Select bin</option>
-                            {% for bin in bins %}
-                            <option value="{{ bin.id }}">{{ bin.code }}</option>
-                            {% endfor %}
+                        <div class="flex items-center gap-1">
+                            <select id="new-bin" class="bin-select border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    onchange="handleNewBinChange(this)">
+                                <option value="">Select bin</option>
+                                {% for bin in bins %}
+                                <option value="{{ bin.id }}">{{ bin.code }}</option>
+                                {% endfor %}
+                                <option value="__new__">+ New</option>
+                            </select>
+                            <input type="text" id="new-bin-input" placeholder="e.g. A1"
+                                   class="hidden w-16 border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                        </div>
+                    </td>
+                    <td class="px-4 py-2">
+                        <select id="new-position" class="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-500">
+                            <option value="" selected>entire bin</option>
+                            <option value="front">front</option>
+                            <option value="back">back</option>
+                            <option value="center">center</option>
+                            <option value="left">left</option>
+                            <option value="right">right</option>
+                            <option value="top">top</option>
+                            <option value="bottom">bottom</option>
                         </select>
                     </td>
                     <td class="px-4 py-2">
@@ -129,6 +148,31 @@ function handleNewCategoryChange(select) {
     }
 }
 
+function handleNewBinChange(select) {
+    const newInput = document.getElementById('new-bin-input');
+    if (select.value === '__new__') {
+        newInput.classList.remove('hidden');
+        newInput.focus();
+    } else {
+        newInput.classList.add('hidden');
+        newInput.value = '';
+    }
+}
+
+function handleBinChange(select, itemId) {
+    const row = document.getElementById(`item-row-${itemId}`);
+    const newInput = row.querySelector('.new-bin-input');
+
+    if (select.value === '__new__') {
+        newInput.classList.remove('hidden');
+        newInput.focus();
+    } else {
+        newInput.classList.add('hidden');
+        newInput.value = '';
+    }
+    markRowDirty(itemId);
+}
+
 function saveRow(itemId) {
     const row = document.getElementById(`item-row-${itemId}`);
     const saveBtn = row.querySelector('.save-btn');
@@ -137,7 +181,17 @@ function saveRow(itemId) {
     const formData = new FormData();
     formData.append('csrfmiddlewaretoken', csrfToken);
     formData.append('name', row.querySelector('input[name="name"]').value);
-    formData.append('bin_id', row.querySelector('select[name="bin_id"]').value);
+
+    const binSelect = row.querySelector('select[name="bin_id"]');
+    const newBinInput = row.querySelector('input[name="new_bin"]');
+
+    if (binSelect.value === '__new__' && newBinInput.value.trim()) {
+        formData.append('new_bin', newBinInput.value.trim());
+    } else {
+        formData.append('bin_id', binSelect.value);
+    }
+
+    formData.append('position', row.querySelector('select[name="position"]').value);
     formData.append('quantity', row.querySelector('input[name="quantity"]').value);
     formData.append('unit', row.querySelector('select[name="unit"]').value);
 
@@ -168,6 +222,15 @@ function saveRow(itemId) {
             newCategoryInput.value = '';
         }
 
+        // Add new bin to all dropdowns if created
+        if (binSelect.value === '__new__' && newBinInput.value.trim()) {
+            const newBin = newBinInput.value.trim();
+            addBinToDropdowns(newBin);
+            binSelect.value = 'new_' + newBin;
+            newBinInput.classList.add('hidden');
+            newBinInput.value = '';
+        }
+
         setTimeout(() => { status.innerHTML = ''; }, 2000);
     })
     .catch(() => {
@@ -191,10 +254,16 @@ function deleteRow(itemId) {
 
 function addNewItem() {
     const name = document.getElementById('new-name').value.trim();
-    const binId = document.getElementById('new-bin').value;
+    const binSelect = document.getElementById('new-bin');
+    const binId = binSelect.value;
+    const newBinInput = document.getElementById('new-bin-input');
     const status = document.getElementById('new-item-status');
 
-    if (!name || !binId) {
+    // Check for new bin or selected bin
+    const isNewBin = binId === '__new__';
+    const newBinCode = newBinInput.value.trim();
+
+    if (!name || (!binId && !newBinCode) || (isNewBin && !newBinCode)) {
         status.innerHTML = '<span class="text-red-600">Name and bin required</span>';
         setTimeout(() => { status.innerHTML = ''; }, 2000);
         return;
@@ -203,9 +272,16 @@ function addNewItem() {
     const formData = new FormData();
     formData.append('csrfmiddlewaretoken', csrfToken);
     formData.append('name', name);
-    formData.append('bin_id', binId);
+
+    if (isNewBin) {
+        formData.append('new_bin', newBinCode);
+    } else {
+        formData.append('bin_id', binId);
+    }
+
     formData.append('quantity', document.getElementById('new-quantity').value);
     formData.append('unit', document.getElementById('new-unit').value);
+    formData.append('position', document.getElementById('new-position').value);
 
     const categorySelect = document.getElementById('new-category');
     const newCategoryInput = document.getElementById('new-category-input');
@@ -234,9 +310,17 @@ function addNewItem() {
             addCategoryToDropdowns(newCategoryInput.value.trim());
         }
 
+        // Add new bin to dropdowns if created
+        if (isNewBin && newBinCode) {
+            addBinToDropdowns(newBinCode);
+        }
+
         // Clear form
         document.getElementById('new-name').value = '';
         document.getElementById('new-bin').value = '';
+        document.getElementById('new-bin-input').value = '';
+        document.getElementById('new-bin-input').classList.add('hidden');
+        document.getElementById('new-position').value = '';
         document.getElementById('new-category').value = '';
         document.getElementById('new-category-input').value = '';
         document.getElementById('new-category-input').classList.add('hidden');
@@ -267,5 +351,23 @@ function addCategoryToDropdowns(newCat) {
         }
     });
 }
+
+function addBinToDropdowns(newBin) {
+    document.querySelectorAll('.bin-select').forEach(sel => {
+        const exists = Array.from(sel.options).some(opt => opt.textContent === newBin);
+        if (!exists) {
+            const option = document.createElement('option');
+            option.value = 'new_' + newBin;  // Temporary value, will be replaced on reload
+            option.textContent = newBin;
+            const newOption = sel.querySelector('option[value="__new__"]');
+            if (newOption) {
+                sel.insertBefore(option, newOption);
+            } else {
+                sel.appendChild(option);
+            }
+        }
+    });
+}
+
 </script>
 {% endblock %}

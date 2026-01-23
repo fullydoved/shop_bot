@@ -10,7 +10,7 @@ BEAVS (aka "Beavs") is a shop inventory and project management system with a nat
 
 ## Features
 
-- **Inventory Management** - Track items in bins with categories, quantities, units
+- **Inventory Management** - Track items in bins with categories, quantities, units, positions
 - **Project Management** - Create and track projects with statuses (idea/active/paused/completed)
 - **Task Management** - Tasks with priorities, notes, optional project linking
 - **Natural Language Chat** - Talk to Beavs to manage everything
@@ -35,8 +35,10 @@ shop_bot/
 ### Inventory
 | Tool | Description | Example |
 |------|-------------|---------|
-| `add_inventory_items` | Add items to a bin | "Bin A1 has 50 M3 screws" |
+| `add_inventory_items` | Add/update items in a bin | "Bin A1 has 50 M3 screws on the left" |
 | `find_inventory` | Search for items | "Where are my screws?" |
+| `delete_inventory_item` | Delete an item | "Delete the M3 screws" |
+| `clear_inventory` | Delete ALL items | "Clear all inventory" |
 
 ### Projects
 | Tool | Description | Example |
@@ -51,7 +53,7 @@ shop_bot/
 |------|-------------|---------|
 | `create_task` | Create task (standalone or linked) | "Add task to Trident: lube rails" |
 | `get_pending_tasks` | List pending tasks | "What's on my list?" |
-| `list_tasks` | List all tasks | "Show completed tasks" |
+| `list_tasks` | List tasks (filter by status/project) | "What's on the Trident project?" |
 | `complete_task` | Mark task done | "Mark order PLA as done" |
 | `update_task` | Update task details | "Add note to lube rails: waiting on parts" |
 | `delete_task` | Delete a task | "Delete the clean bench task" |
@@ -67,7 +69,7 @@ shop_bot/
 ```bash
 # .env file
 ANTHROPIC_API_KEY=sk-ant-your-key-here
-CLAUDE_MODEL=claude-sonnet-4-5-20250929
+CLAUDE_MODEL=claude-haiku-4-5-20251001
 ```
 
 ### 3. Restart
