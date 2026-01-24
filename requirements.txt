@@ -6,6 +6,7 @@ django-htmx>=1.17
 requests>=2.31
 PyChromecast>=14.0
 piper-tts>=1.2
+APScheduler>=3.10
 
 # Optional: for local LLM fallback
 ollama>=0.4

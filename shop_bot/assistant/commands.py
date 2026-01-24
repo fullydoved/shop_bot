@@ -12,6 +12,15 @@ from chromecast.services import (
     music_pause, music_play, music_stop, music_skip, music_previous,
     music_volume, music_volume_up, music_volume_down, music_status,
 )
+from assistant.weather import get_weather, format_weather, is_good_for_painting
+from reminders.services import (
+    create_reminder, get_pending_reminders, get_triggered_reminders,
+    cancel_reminder, dismiss_reminder,
+)
+from tools.services import (
+    add_tool, remove_tool, checkout_tool, return_tool,
+    find_tool, list_tools,
+)
 
 
 def handle_add_inventory_items(bin_code: str, items: list, divider_type: str = None, **kwargs) -> str:
@@ -434,6 +443,151 @@ def handle_get_music_status(**kwargs) -> str:
         return f"Error getting status: {e}"
 
 
+# --- Weather handlers ---
+
+def handle_get_weather(location: str = None, check_painting: bool = False, **kwargs) -> str:
+    """Handle getting weather information."""
+    try:
+        weather = get_weather(location)
+        result = format_weather(weather)
+
+        if check_painting:
+            is_good, reason = is_good_for_painting(weather)
+            result += f"\n\nSpray painting: {reason}"
+
+        return result
+    except ValueError as e:
+        return str(e)
+    except Exception as e:
+        return f"Error getting weather: {e}"
+
+
+# --- Reminder handlers ---
+
+def handle_set_reminder(title: str, time: str, notes: str = '', **kwargs) -> str:
+    """Handle setting a reminder."""
+    try:
+        reminder = create_reminder(title, time, notes)
+        return f"Reminder set: '{reminder.title}' in {reminder.time_until}"
+    except ValueError as e:
+        return str(e)
+    except Exception as e:
+        return f"Error setting reminder: {e}"
+
+
+def handle_list_reminders(include_triggered: bool = True, **kwargs) -> str:
+    """Handle listing reminders."""
+    pending = get_pending_reminders()
+    triggered = get_triggered_reminders() if include_triggered else []
+
+    if not pending and not triggered:
+        return "No reminders set."
+
+    lines = []
+
+    if triggered:
+        lines.append("TRIGGERED:")
+        for r in triggered[:5]:
+            lines.append(f"  ! {r.title}")
+
+    if pending:
+        if triggered:
+            lines.append("")
+        lines.append("Pending:")
+        for r in pending[:10]:
+            lines.append(f"  - {r.title} ({r.time_until})")
+
+    return "\n".join(lines)
+
+
+def handle_cancel_reminder(title: str, **kwargs) -> str:
+    """Handle cancelling a reminder."""
+    if cancel_reminder(title=title):
+        return f"Cancelled reminder: {title}"
+    return f"No pending reminder found matching '{title}'"
+
+
+def handle_dismiss_reminder(title: str, **kwargs) -> str:
+    """Handle dismissing a triggered reminder."""
+    if dismiss_reminder(title=title):
+        return f"Dismissed reminder: {title}"
+    return f"No reminder found matching '{title}'"
+
+
+# --- Tool checkout handlers ---
+
+def handle_add_shop_tool(name: str, description: str = '', location: str = '', category: str = '', **kwargs) -> str:
+    """Handle adding a tool to the system."""
+    tool = add_tool(name, description, location, category)
+    loc_info = f" (location: {tool.location})" if tool.location else ""
+    return f"Added tool: {tool.name}{loc_info}"
+
+
+def handle_checkout_tool(tool_name: str, borrower: str, notes: str = '', **kwargs) -> str:
+    """Handle checking out a tool."""
+    checkout, message = checkout_tool(tool_name, borrower, notes)
+    return message
+
+
+def handle_return_tool(tool_name: str, **kwargs) -> str:
+    """Handle returning a tool."""
+    checkout, message = return_tool(tool_name)
+    return message
+
+
+def handle_find_shop_tool(query: str, **kwargs) -> str:
+    """Handle finding a tool."""
+    tools = find_tool(query)
+    if not tools:
+        return f"No tools found matching '{query}'"
+
+    results = []
+    for tool in tools[:10]:
+        if tool.is_available:
+            loc = f" - {tool.location}" if tool.location else ""
+            results.append(f"- {tool.name}: available{loc}")
+        else:
+            checkout = tool.current_checkout
+            results.append(f"- {tool.name}: checked out to {checkout.borrower} ({checkout.duration})")
+
+    return "\n".join(results)
+
+
+def handle_list_shop_tools(available_only: bool = False, checked_out_only: bool = False, **kwargs) -> str:
+    """Handle listing tools."""
+    tools = list_tools(available_only, checked_out_only)
+    if not tools:
+        if available_only:
+            return "No tools available."
+        elif checked_out_only:
+            return "No tools currently checked out."
+        return "No tools in the system."
+
+    results = []
+    for tool in tools:
+        if tool.is_available:
+            loc = f" ({tool.location})" if tool.location else ""
+            results.append(f"- {tool.name}{loc}: available")
+        else:
+            checkout = tool.current_checkout
+            results.append(f"- {tool.name}: {checkout.borrower} ({checkout.duration})")
+
+    header = "Tools"
+    if available_only:
+        header = "Available tools"
+    elif checked_out_only:
+        header = "Checked out tools"
+
+    return f"{header}:\n" + "\n".join(results)
+
+
+def handle_remove_shop_tool(name: str, **kwargs) -> str:
+    """Handle removing a tool."""
+    if remove_tool(name):
+        return f"Removed tool: {name}"
+    return f"Tool '{name}' not found"
+
+
 COMMAND_HANDLERS = {
     'add_inventory_items': handle_add_inventory_items,
     'find_inventory': handle_find_inventory,
@@ -461,4 +615,15 @@ COMMAND_HANDLERS = {
     'control_music': handle_control_music,
     'set_music_volume': handle_set_music_volume,
     'get_music_status': handle_get_music_status,
+    'get_weather': handle_get_weather,
+    'set_reminder': handle_set_reminder,
+    'list_reminders': handle_list_reminders,
+    'cancel_reminder': handle_cancel_reminder,
+    'dismiss_reminder': handle_dismiss_reminder,
+    'add_shop_tool': handle_add_shop_tool,
+    'checkout_tool': handle_checkout_tool,
+    'return_tool': handle_return_tool,
+    'find_shop_tool': handle_find_shop_tool,
+    'list_shop_tools': handle_list_shop_tools,
+    'remove_shop_tool': handle_remove_shop_tool,
 }

@@ -54,6 +54,8 @@ INSTALLED_APPS = [
     'assistant',
     'dashboard',
     'cli',
+    'reminders',
+    'tools',
 ]
 
 MIDDLEWARE = [

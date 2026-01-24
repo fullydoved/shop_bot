@@ -352,6 +352,169 @@ TOOL_DEFINITIONS = [
             'parameters': {'type': 'object', 'properties': {}}
         }
     },
+    # --- Weather tools ---
+    {
+        'type': 'function',
+        'function': {
+            'name': 'get_weather',
+            'description': 'Get current weather conditions. Can check if conditions are good for outdoor activities like spray painting.',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'location': {'type': 'string', 'description': 'City name (e.g., "Toronto,CA"). Uses default location if not specified.'},
+                    'check_painting': {'type': 'boolean', 'description': 'Check if conditions are suitable for spray painting outside'}
+                }
+            }
+        }
+    },
+    # --- Reminder tools ---
+    {
+        'type': 'function',
+        'function': {
+            'name': 'set_reminder',
+            'description': 'Set a timed reminder. Examples: "remind me in 20 minutes to flip the part", "set a timer for 1 hour"',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'title': {'type': 'string', 'description': 'What to remind about'},
+                    'time': {'type': 'string', 'description': 'When to trigger: "30 seconds", "5 minutes", "1 hour", "1h30m"'},
+                    'notes': {'type': 'string', 'description': 'Optional additional notes'}
+                },
+                'required': ['title', 'time']
+            }
+        }
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'list_reminders',
+            'description': 'List pending and triggered reminders',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'include_triggered': {'type': 'boolean', 'description': 'Include already-triggered reminders (default: true)'}
+                }
+            }
+        }
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'cancel_reminder',
+            'description': 'Cancel a pending reminder',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'title': {'type': 'string', 'description': 'Reminder title (partial match OK)'}
+                },
+                'required': ['title']
+            }
+        }
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'dismiss_reminder',
+            'description': 'Dismiss a triggered reminder (acknowledge it)',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'title': {'type': 'string', 'description': 'Reminder title (partial match OK)'}
+                },
+                'required': ['title']
+            }
+        }
+    },
+    # --- Tool checkout tools ---
+    {
+        'type': 'function',
+        'function': {
+            'name': 'add_shop_tool',
+            'description': 'Add a new tool to the checkout system',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'name': {'type': 'string', 'description': 'Tool name'},
+                    'description': {'type': 'string', 'description': 'Tool description'},
+                    'location': {'type': 'string', 'description': 'Where the tool normally lives'},
+                    'category': {'type': 'string', 'description': 'Tool category (e.g., power tools, hand tools)'}
+                },
+                'required': ['name']
+            }
+        }
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'checkout_tool',
+            'description': 'Check out / borrow a tool. Example: "I\'m taking the drill press"',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'tool_name': {'type': 'string', 'description': 'Tool name (partial match OK)'},
+                    'borrower': {'type': 'string', 'description': 'Name of person borrowing'},
+                    'notes': {'type': 'string', 'description': 'Optional notes'}
+                },
+                'required': ['tool_name', 'borrower']
+            }
+        }
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'return_tool',
+            'description': 'Return a borrowed tool',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'tool_name': {'type': 'string', 'description': 'Tool name (partial match OK)'}
+                },
+                'required': ['tool_name']
+            }
+        }
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'find_shop_tool',
+            'description': 'Find a tool and see who has it. Example: "Where\'s my multimeter?"',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'query': {'type': 'string', 'description': 'Tool name to search for'}
+                },
+                'required': ['query']
+            }
+        }
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'list_shop_tools',
+            'description': 'List all tools and their checkout status',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'available_only': {'type': 'boolean', 'description': 'Only show available tools'},
+                    'checked_out_only': {'type': 'boolean', 'description': 'Only show checked out tools'}
+                }
+            }
+        }
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'remove_shop_tool',
+            'description': 'Remove a tool from the checkout system',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'name': {'type': 'string', 'description': 'Tool name to remove'}
+                },
+                'required': ['name']
+            }
+        }
+    },
     # --- Music tools ---
     {
         'type': 'function',

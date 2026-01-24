@@ -1,20 +1,25 @@
 # BEAVS - Bin Entry And Verification System
 
-A Canadian-themed shop assistant for maker spaces, powered by Claude AI.
+A shop assistant for maker spaces, powered by Claude AI with voice, lighting, and music control.
 
 ## Overview
 
-BEAVS (aka "Beavs") is a shop inventory and project management system with a natural language interface. It uses the Claude API for understanding commands and managing inventory, projects, and tasks through conversation.
+BEAVS (aka "Beavs") is a shop inventory and project management system with a natural language interface. It uses the Claude API for understanding commands and managing inventory, projects, tasks, lighting, and music through conversation.
 
-**Personality:** Friendly Canadian hoser - says "eh" and "bud", keeps responses brief.
+**Personality:** Helpful and casual, keeps it brief. Gets straight to the point.
 
 ## Features
 
-- **Inventory Management** - Track items in bins with categories, quantities, units, positions
-- **Project Management** - Create and track projects with statuses (idea/active/paused/completed)
-- **Task Management** - Tasks with priorities, notes, optional project linking
-- **Natural Language Chat** - Talk to Beavs to manage everything
-- **Web Interface** - Dashboard, inventory, projects, and tasks pages
+- **Inventory Management** - Track items in bins with categories, quantities, positions
+- **Project & Task Management** - Projects with statuses, tasks with priorities and project linking
+- **Tool Checkout** - Track who borrowed what tool and when
+- **Timed Reminders** - "Remind me in 20 minutes to flip the part"
+- **Weather** - Current conditions, spray painting suitability check
+- **Text-to-Speech** - Beavs talks back using Piper TTS (local, offline)
+- **WLED Lighting Control** - 8 zones (4 walls + 4 corners), colors, effects, KITT-style audio sync
+- **Chromecast Music** - Play/pause/skip, volume control, now playing status
+- **Web Dashboard** - Chat interface, inventory, projects, tasks pages
+- **CLI Interface** - `python manage.py beavs` for terminal REPL
 
 ## Architecture
 
@@ -23,24 +28,39 @@ shop_bot/
 ├── assistant/           # Claude AI integration
 │   ├── claude_client.py # API wrapper
 │   ├── processor.py     # Input processing & history management
-│   ├── prompts.py       # System prompt & tool definitions
-│   └── commands.py      # Tool execution handlers
-├── dashboard/           # Main dashboard & chat
-├── inventory/           # Inventory models, views, services
-└── projects/            # Projects & tasks models, views, services
+│   ├── prompts.py       # System prompt & tool definitions (37 tools)
+│   ├── commands.py      # Tool execution handlers
+│   └── tts.py           # Piper TTS integration
+├── dashboard/           # Web UI & chat
+├── inventory/           # Bins, items, audit logging
+├── projects/            # Projects & tasks
+├── lighting/            # WLED control (8 segments)
+├── chromecast/          # Music playback control
+├── reminders/           # Timed reminders with APScheduler
+├── tools/               # Tool checkout system
+└── cli/                 # Terminal REPL interface
 ```
 
-## Chat Tools
+## Chat Tools (37 total)
 
-### Inventory
+### Inventory (6 tools)
 | Tool | Description | Example |
 |------|-------------|---------|
 | `add_inventory_items` | Add/update items in a bin | "Bin A1 has 50 M3 screws on the left" |
 | `find_inventory` | Search for items | "Where are my screws?" |
+| `use_inventory_item` | Remove quantity from item | "Use 5 M3 screws" |
 | `delete_inventory_item` | Delete an item | "Delete the M3 screws" |
+| `get_inventory_log` | View recent activity | "Show inventory log" |
 | `clear_inventory` | Delete ALL items | "Clear all inventory" |
 
-### Projects
+### Bins (3 tools)
+| Tool | Description | Example |
+|------|-------------|---------|
+| `find_empty_bins` | Find available bins | "What bins are empty?" |
+| `delete_bin` | Delete empty bin | "Delete bin A1" |
+| `cleanup_empty_bins` | Delete all empty bins | "Clean up empty bins" |
+
+### Projects (4 tools)
 | Tool | Description | Example |
 |------|-------------|---------|
 | `create_project` | Create a project | "Start a drone build project" |
@@ -48,7 +68,7 @@ shop_bot/
 | `update_project` | Update status/name | "Mark drone build as active" |
 | `delete_project` | Delete a project | "Delete the LED lamp project" |
 
-### Tasks
+### Tasks (6 tools)
 | Tool | Description | Example |
 |------|-------------|---------|
 | `create_task` | Create task (standalone or linked) | "Add task to Trident: lube rails" |
@@ -58,39 +78,96 @@ shop_bot/
 | `update_task` | Update task details | "Add note to lube rails: waiting on parts" |
 | `delete_task` | Delete a task | "Delete the clean bench task" |
 
-## Claude API Setup
+### Lighting (4 tools)
+| Tool | Description | Example |
+|------|-------------|---------|
+| `control_lights` | On/off, brightness | "Turn on the shop lights" |
+| `set_light_color` | Set zone color | "Make the north wall red" |
+| `set_light_effect` | Set lighting effect | "Set rainbow effect on all" |
+| `get_light_status` | Current light state | "What are the lights doing?" |
 
-### 1. Get API Key
-1. Go to [console.anthropic.com](https://console.anthropic.com)
-2. Navigate to **API Keys** → **Create Key**
-3. Copy the key (starts with `sk-ant-...`)
+**Zones:** `all`, `walls`, `corners`, `north`/`n`, `south`/`s`, `east`/`e`, `west`/`w`, `ne`, `nw`, `se`, `sw`
+**Colors:** red, green, blue, white, warm, cool, orange, purple, yellow, pink, cyan, magenta, or hex (#FF0000)
+**Effects:** solid, blink, breathe, wipe, random, rainbow, scan, fade, chase, fire, twinkle, fireworks
 
-### 2. Configure Environment
+### Music (3 tools)
+| Tool | Description | Example |
+|------|-------------|---------|
+| `control_music` | Play/pause/skip/stop | "Pause the music" |
+| `set_music_volume` | Set or adjust volume | "Turn it up" / "Volume 50" |
+| `get_music_status` | Now playing info | "What's playing?" |
+
+### Weather (1 tool)
+| Tool | Description | Example |
+|------|-------------|---------|
+| `get_weather` | Current conditions, painting check | "What's the weather?" / "Good day for painting?" |
+
+### Reminders (4 tools)
+| Tool | Description | Example |
+|------|-------------|---------|
+| `set_reminder` | Set a timed reminder | "Remind me in 20 min to flip the part" |
+| `list_reminders` | Show pending/triggered reminders | "What reminders do I have?" |
+| `cancel_reminder` | Cancel a pending reminder | "Cancel the glue reminder" |
+| `dismiss_reminder` | Acknowledge a triggered reminder | "Dismiss that reminder" |
+
+**Time formats:** `30s`, `5 minutes`, `1h`, `1h30m`, `2 hours 15 minutes`
+
+### Tool Checkout (6 tools)
+| Tool | Description | Example |
+|------|-------------|---------|
+| `add_shop_tool` | Add a tool to the system | "Add the drill press to tools" |
+| `checkout_tool` | Borrow a tool | "I'm taking the angle grinder" |
+| `return_tool` | Return a borrowed tool | "Returning the drill press" |
+| `find_shop_tool` | Find tool / who has it | "Where's my multimeter?" |
+| `list_shop_tools` | List all tools & status | "What tools are checked out?" |
+| `remove_shop_tool` | Remove tool from system | "Remove the broken drill" |
+
+## Text-to-Speech
+
+Beavs speaks responses using **Piper TTS** (offline, runs locally):
+- Voice model: `en_US-ryan-high` (downloaded at Docker build)
+- Toggle on dashboard with speaker icon
+- **KITT-style lights:** When enabled, WLED brightness modulates with speech audio
+- Adjustable light sync delay slider (-200ms to +200ms)
+
+## Docker Setup
+
 ```bash
-# .env file
-ANTHROPIC_API_KEY=sk-ant-your-key-here
-CLAUDE_MODEL=claude-haiku-4-5-20251001
+# Build and run
+docker compose up -d
+
+# View logs
+docker compose logs -f
+
+# Restart after .env changes
+docker compose restart
 ```
 
-### 3. Restart
+**Container details:**
+- Single container, no external dependencies (Redis, etc.)
+- Network mode: host (for mDNS/Chromecast discovery)
+- Data persisted to `./data:/app/data` (SQLite DB)
+- Port: 42069
+
+## Configuration (.env)
+
 ```bash
-docker compose restart
+# Required
+ANTHROPIC_API_KEY=sk-ant-your-key-here
+
+# Optional
+CLAUDE_MODEL=claude-haiku-4-5-20251001  # Default model
+WLED_HOST=http://192.168.1.23           # WLED controller IP
+CHROMECAST_IP=192.168.1.50              # Direct IP (optional, uses mDNS otherwise)
+OPENWEATHER_API_KEY=your-api-key        # OpenWeatherMap API key (free tier)
+WEATHER_LOCATION=Toronto,CA              # Default location for weather
 ```
 
 ## Cost Management
 
-### Current Settings (optimized)
-- **max_tokens:** 300 (short, punchy responses)
-- **History limit:** 10 messages (prevents token bloat)
-- **System prompt:** ~80 tokens (minimal)
+- **max_tokens:** 300 (short responses)
+- **History limit:** 10 messages
 
-### Estimated Costs (Sonnet 4.5)
-| Scenario | Cost/Interaction | Monthly (50/day) |
-|----------|-----------------|------------------|
-| Optimized | ~$0.01-0.02 | ~$15-30 |
-| With Haiku | ~$0.005 | ~$7.50 |
-
-### Available Models
 | Model | ID | Cost (In/Out per MTok) |
 |-------|-----|------------------------|
 | Haiku 4.5 | `claude-haiku-4-5-20251001` | $1 / $5 |
@@ -101,37 +178,53 @@ docker compose restart
 
 | Page | URL | Description |
 |------|-----|-------------|
-| Dashboard | `/` | Stats, chat with Beavs, pending tasks |
-| Inventory | `/inventory/` | All items, inline editing, add/delete |
-| Projects | `/projects/` | Project list, click for details |
-| Project Detail | `/projects/<id>/` | Project tasks, add tasks |
+| Dashboard | `/` | Chat, stats, pending tasks, TTS toggle |
+| Inventory | `/inventory/` | Items, inline edit, add/delete |
+| Projects | `/projects/` | Project list with status |
+| Project Detail | `/projects/<id>/` | Project tasks |
 | Tasks | `/tasks/` | All tasks, filter by project/status |
+| TTS | `/tts/?text=hello` | Direct TTS endpoint (WAV audio) |
+
+## CLI Interface
+
+```bash
+# Inside container
+python manage.py beavs
+
+# Commands
+/help   - Show help
+/clear  - Clear history
+/quit   - Exit
+```
 
 ## Development
 
-### Run Migrations
 ```bash
+# Run migrations
 python manage.py makemigrations
 python manage.py migrate
-```
 
-### Key Files to Edit
-- `assistant/prompts.py` - Personality, tool definitions
-- `assistant/commands.py` - Tool execution logic
-- `*/services.py` - Business logic
-- `templates/` - UI templates
+# Key files
+assistant/prompts.py   # System prompt, tool definitions
+assistant/commands.py  # Tool execution handlers
+assistant/tts.py       # Piper TTS
+lighting/services.py   # WLED API
+chromecast/services.py # Chromecast control
+```
 
 ## Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
-| "ANTHROPIC_API_KEY not set" | Check `.env`, restart container |
-| High costs | Switch to Haiku, check history limit |
-| Beavs too chatty | Reduce max_tokens in `claude_client.py` |
-| Tool not working | Check `commands.py` handler, `prompts.py` definition |
+| API key error | Check `.env`, restart container |
+| TTS not working | Check libsndfile1 installed, voice model downloaded |
+| Lights not responding | Verify WLED_HOST in `.env`, check WLED is reachable |
+| Chromecast not found | Set CHROMECAST_IP directly, or check mDNS/network |
+| High API costs | Switch to Haiku model |
 
 ## Resources
 
 - [Claude API Docs](https://docs.anthropic.com/)
-- [Anthropic Console](https://console.anthropic.com)
+- [Piper TTS](https://github.com/rhasspy/piper)
+- [WLED](https://kno.wled.ge/)
 - [Tool Use Guide](https://docs.anthropic.com/en/docs/build-with-claude/tool-use)
