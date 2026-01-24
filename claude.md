@@ -173,7 +173,7 @@ docker compose restart
 - Single container, no external dependencies (Redis, etc.)
 - Network mode: host (for mDNS/Chromecast discovery)
 - Data persisted to `./data:/app/data` (SQLite DB)
-- Port: 42069
+- Port: 42070
 
 ## Configuration (.env)
 

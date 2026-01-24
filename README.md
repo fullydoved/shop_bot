@@ -42,7 +42,7 @@ docker compose up -d
 # Run migrations (first time only)
 docker compose exec beavs python manage.py migrate
 
-# Visit http://localhost:42069
+# Visit http://localhost:42070
 ```
 
 ## Configuration

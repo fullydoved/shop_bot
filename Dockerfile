@@ -35,7 +35,7 @@ RUN python -c "from assistant.stt import download_model; download_model()"
 RUN python manage.py collectstatic --noinput || true
 
 # Expose port
-EXPOSE 42069
+EXPOSE 42070
 
 # Run migrations and start server
-CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:42069"]
+CMD ["sh", "-c", "python manage.py migrate && python manage.py runserver 0.0.0.0:42070"]
