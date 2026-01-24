@@ -1,6 +1,7 @@
 """Background scheduler for checking reminders."""
 
 import logging
+import random
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from django.conf import settings
@@ -23,7 +24,6 @@ def check_reminders_job():
             logger.info(f"Triggered {len(triggered)} reminder(s): {titles}")
 
         # Occasionally clean up old reminders (every ~100 checks)
-        import random
         if random.random() < 0.01:
             deleted = cleanup_old_reminders()
             if deleted:

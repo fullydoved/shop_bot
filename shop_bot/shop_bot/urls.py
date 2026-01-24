@@ -6,6 +6,7 @@ from projects.views import (
     create_project, update_project, delete_project,
     create_task, update_task, delete_task,
 )
+from reminders.views import poll_reminders
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -26,4 +27,6 @@ urlpatterns = [
     path('tasks/create/', create_task, name='create_task'),
     path('tasks/<int:task_id>/', update_task, name='update_task'),
     path('tasks/<int:task_id>/delete/', delete_task, name='delete_task'),
+    # Reminders
+    path('reminders/poll/', poll_reminders, name='poll_reminders'),
 ]

@@ -519,6 +519,57 @@ document.body.addEventListener('htmx:afterSwap', function(event) {
     }
 });
 
+// Reminder polling - check for triggered reminders every 5 seconds
+let reminderQueue = [];
+let isAnnouncingReminder = false;
+
+async function pollReminders() {
+    try {
+        const response = await fetch('/reminders/poll/');
+        const data = await response.json();
+
+        if (data.reminders && data.reminders.length > 0) {
+            // Add to queue
+            reminderQueue.push(...data.reminders);
+            processReminderQueue();
+        }
+    } catch (err) {
+        console.warn('Failed to poll reminders:', err);
+    }
+}
+
+async function processReminderQueue() {
+    if (isAnnouncingReminder || reminderQueue.length === 0) return;
+
+    isAnnouncingReminder = true;
+    const reminder = reminderQueue.shift();
+
+    // Announce via TTS (ignores ttsEnabled - reminders always speak)
+    const audio = new Audio();
+    audio.src = '/tts/?text=' + encodeURIComponent(reminder.message);
+
+    audio.onended = () => {
+        isAnnouncingReminder = false;
+        // Process next reminder after a short delay
+        setTimeout(processReminderQueue, 500);
+    };
+    audio.onerror = () => {
+        isAnnouncingReminder = false;
+        setTimeout(processReminderQueue, 500);
+    };
+
+    try {
+        await audio.play();
+    } catch (err) {
+        console.warn('Reminder TTS failed:', err);
+        isAnnouncingReminder = false;
+        setTimeout(processReminderQueue, 500);
+    }
+}
+
+// Start reminder polling
+setInterval(pollReminders, 5000);
+
 // Push-to-Talk (PTT) State
 let mediaRecorder = null;
 let audioChunks = [];

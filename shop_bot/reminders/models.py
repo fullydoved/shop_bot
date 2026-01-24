@@ -11,6 +11,7 @@ class Reminder(models.Model):
     trigger_at = models.DateTimeField(db_index=True)
     triggered = models.BooleanField(default=False)
     triggered_at = models.DateTimeField(null=True, blank=True)
+    announced = models.BooleanField(default=False)
     dismissed = models.BooleanField(default=False)
 
     class Meta:
