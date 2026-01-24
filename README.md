@@ -50,7 +50,8 @@ docker compose exec beavs python manage.py migrate
 Create a `.env` file from the example:
 
 ```bash
-# Required: Claude API
+# Required
+DJANGO_SECRET_KEY=generate-with-python   # python -c "import secrets; print(secrets.token_urlsafe(50))"
 ANTHROPIC_API_KEY=sk-ant-your-key-here
 CLAUDE_MODEL=claude-sonnet-4-5-20250929
 
@@ -63,6 +64,7 @@ CLAUDE_MODEL=claude-sonnet-4-5-20250929
 
 | Variable | Default | Description |
 |----------|---------|-------------|
+| `DJANGO_SECRET_KEY` | - | **Required** - Django secret key |
 | `ANTHROPIC_API_KEY` | - | **Required** - Claude API key |
 | `CLAUDE_MODEL` | `claude-sonnet-4-5-20250929` | Claude model to use |
 | `WLED_DEVICES` | - | WLED controllers (host:name,...) |

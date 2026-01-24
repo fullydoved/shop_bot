@@ -179,6 +179,7 @@ docker compose restart
 
 ```bash
 # Required
+DJANGO_SECRET_KEY=your-secret-key       # Generate: python -c "import secrets; print(secrets.token_urlsafe(50))"
 ANTHROPIC_API_KEY=sk-ant-your-key-here
 
 # Optional

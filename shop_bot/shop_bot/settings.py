@@ -29,7 +29,7 @@ DATA_DIR.mkdir(exist_ok=True)
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-bae2y*+m7ms8yacr%^&#cd6ty0=)+lmf__=l$s(qowe)t*g$*v'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'dev-only-insecure-key')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
