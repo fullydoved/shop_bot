@@ -1,5 +1,7 @@
-from django.db.models import QuerySet
+from django.db.models import Q, QuerySet
 from .models import Bin, InventoryItem, InventoryLog
+from .aliases import expand_query
+from .normalize import normalize_fastener_name
 
 
 def log_inventory_change(
@@ -40,7 +42,15 @@ def add_item(
 
     If an item with the same name exists in the bin, updates the quantity.
     Otherwise creates a new item.
+
+    Fastener names are automatically normalized to standard format:
+    - "socket head cap screw M3x6mm" -> "SHCS M3x6mm"
+    - "M5 hex nut" -> "HEX NUT M5"
+    - "washer M4" -> "WASHER M4"
     """
+    # Normalize fastener names to standard format
+    name = normalize_fastener_name(name)
+
     bin_obj = get_or_create_bin(bin_code)
 
     # Check if item already exists in this bin
@@ -92,8 +102,15 @@ def set_bin_divider(bin_code: str, divider_type: str) -> Bin:
 
 
 def find_items(query: str) -> QuerySet:
-    """Search for items by name (case-insensitive contains)."""
-    return InventoryItem.objects.filter(name__icontains=query)
+    """Search for items by name with query expansion."""
+    terms = expand_query(query)
+
+    # Build OR query for all expanded terms
+    q_objects = Q()
+    for term in terms:
+        q_objects |= Q(name__icontains=term)
+
+    return InventoryItem.objects.filter(q_objects).distinct()
 
 
 def get_items_in_bin(bin_code: str) -> QuerySet:

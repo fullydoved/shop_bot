@@ -55,6 +55,22 @@ shop_bot/
 | `get_inventory_log` | View recent activity | "Show inventory log" |
 | `clear_inventory` | Delete ALL items | "Clear all inventory" |
 
+**Fastener Name Normalization:** When adding fasteners, names are auto-normalized:
+| Input | Stored As |
+|-------|-----------|
+| `socket head cap screw M3x6mm` | `SHCS M3x6mm` |
+| `m3 button head 10` | `BHCS M3x10mm` |
+| `flat head M4x8` | `FHCS M4x8mm` |
+| `grub screw M4x5` | `GRUB M4x5mm` |
+| `M5 hex nut` | `HEX NUT M5` |
+| `washer M4` | `WASHER M4` |
+
+**Query Expansion:** Searching expands natural terms to abbreviations:
+- `screws` finds SHCS, BHCS, FHCS, GRUB items
+- `socket head` finds SHCS items
+- `nuts` finds HEX NUT items
+- `washers` finds WASHER items
+
 ### Bins (3 tools)
 | Tool | Description | Example |
 |------|-------------|---------|
