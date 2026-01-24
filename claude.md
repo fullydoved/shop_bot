@@ -16,6 +16,7 @@ BEAVS (aka "Beavs") is a shop inventory and project management system with a nat
 - **Timed Reminders** - "Remind me in 20 minutes to flip the part"
 - **Weather** - Current conditions, spray painting suitability check
 - **Text-to-Speech** - Beavs talks back using Piper TTS (local, offline)
+- **Speech-to-Text** - Push-to-talk voice input using faster-whisper (local, offline)
 - **WLED Lighting Control** - 8 zones (4 walls + 4 corners), colors, effects, KITT-style audio sync
 - **Chromecast Music** - Play/pause/skip, volume control, now playing status
 - **Web Dashboard** - Chat interface, inventory, projects, tasks pages
@@ -30,7 +31,8 @@ shop_bot/
 │   ├── processor.py     # Input processing & history management
 │   ├── prompts.py       # System prompt & tool definitions (37 tools)
 │   ├── commands.py      # Tool execution handlers
-│   └── tts.py           # Piper TTS integration
+│   ├── tts.py           # Piper TTS integration
+│   └── stt.py           # Whisper STT integration
 ├── dashboard/           # Web UI & chat
 ├── inventory/           # Bins, items, audit logging
 ├── projects/            # Projects & tasks
@@ -130,6 +132,14 @@ Beavs speaks responses using **Piper TTS** (offline, runs locally):
 - **KITT-style lights:** When enabled, WLED brightness modulates with speech audio
 - Adjustable light sync delay slider (-200ms to +200ms)
 
+## Speech-to-Text
+
+Push-to-talk voice input using **faster-whisper** (offline, runs locally):
+- Model: `base` (~150MB, downloaded at Docker build)
+- Hold the 🎤 button, speak, release to transcribe
+- Transcribed text auto-submits to chat
+- Requires ffmpeg (installed in container)
+
 ## Docker Setup
 
 ```bash
@@ -184,6 +194,7 @@ WEATHER_LOCATION=Toronto,CA              # Default location for weather
 | Project Detail | `/projects/<id>/` | Project tasks |
 | Tasks | `/tasks/` | All tasks, filter by project/status |
 | TTS | `/tts/?text=hello` | Direct TTS endpoint (WAV audio) |
+| STT | `/stt/` | POST audio file, returns JSON `{text: "..."}` |
 
 ## CLI Interface
 
@@ -208,6 +219,7 @@ python manage.py migrate
 assistant/prompts.py   # System prompt, tool definitions
 assistant/commands.py  # Tool execution handlers
 assistant/tts.py       # Piper TTS
+assistant/stt.py       # Whisper STT
 lighting/services.py   # WLED API
 chromecast/services.py # Chromecast control
 ```
@@ -218,6 +230,7 @@ chromecast/services.py # Chromecast control
 |-------|----------|
 | API key error | Check `.env`, restart container |
 | TTS not working | Check libsndfile1 installed, voice model downloaded |
+| STT not working | Check ffmpeg installed, microphone permissions in browser |
 | Lights not responding | Verify WLED_HOST in `.env`, check WLED is reachable |
 | Chromecast not found | Set CHROMECAST_IP directly, or check mDNS/network |
 | High API costs | Switch to Haiku model |
@@ -228,3 +241,4 @@ chromecast/services.py # Chromecast control
 - [Piper TTS](https://github.com/rhasspy/piper)
 - [WLED](https://kno.wled.ge/)
 - [Tool Use Guide](https://docs.anthropic.com/en/docs/build-with-claude/tool-use)
+- [faster-whisper](https://github.com/SYSTRAN/faster-whisper)

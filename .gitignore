@@ -36,3 +36,6 @@ data/*.sqlite3
 # Piper TTS voice models (downloaded at build time)
 shop_bot/assistant/voices/*.onnx
 shop_bot/assistant/voices/*.onnx.json
+
+# Whisper STT models (downloaded at build time)
+shop_bot/assistant/models/

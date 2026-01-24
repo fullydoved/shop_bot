@@ -5,6 +5,7 @@ from inventory.models import Bin, InventoryItem
 from projects.models import Project, Task
 from assistant.processor import InputProcessor
 from assistant.tts import synthesize
+from assistant.stt import transcribe
 
 # Max messages to keep in session (matches processor history limit)
 MAX_CHAT_MESSAGES = 10
@@ -80,3 +81,52 @@ def tts(request):
         return HttpResponse(audio_data, content_type='audio/wav')
     except Exception:
         return HttpResponse(status=500)
+
+
+def stt(request):
+    """Transcribe audio to text using Whisper."""
+    import json
+
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+
+    audio_file = request.FILES.get('audio')
+    if not audio_file:
+        return HttpResponse(
+            json.dumps({'error': 'No audio file provided'}),
+            content_type='application/json',
+            status=400
+        )
+
+    # Check file size (10MB max)
+    if audio_file.size > 10 * 1024 * 1024:
+        return HttpResponse(
+            json.dumps({'error': 'File too large (max 10MB)'}),
+            content_type='application/json',
+            status=400
+        )
+
+    # Detect format from content type
+    content_type = audio_file.content_type or ''
+    if 'webm' in content_type:
+        format_hint = 'webm'
+    elif 'wav' in content_type:
+        format_hint = 'wav'
+    elif 'ogg' in content_type:
+        format_hint = 'ogg'
+    else:
+        format_hint = 'webm'  # Default to webm
+
+    try:
+        audio_bytes = audio_file.read()
+        text = transcribe(audio_bytes, format_hint)
+        return HttpResponse(
+            json.dumps({'text': text}),
+            content_type='application/json'
+        )
+    except Exception as e:
+        return HttpResponse(
+            json.dumps({'error': str(e)}),
+            content_type='application/json',
+            status=500
+        )

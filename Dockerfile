@@ -9,9 +9,10 @@ ENV DATA_DIR=/app/data
 # Set work directory
 WORKDIR /app
 
-# Install system dependencies for piper-tts
+# Install system dependencies for piper-tts and faster-whisper
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libsndfile1 \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 # Install dependencies
@@ -26,6 +27,9 @@ RUN mkdir -p /app/data
 
 # Download Piper TTS voice model at build time
 RUN python -c "from assistant.tts import download_voice; download_voice()"
+
+# Download Whisper STT model at build time
+RUN python -c "from assistant.stt import download_model; download_model()"
 
 # Collect static files
 RUN python manage.py collectstatic --noinput || true

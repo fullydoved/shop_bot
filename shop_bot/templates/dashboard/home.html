@@ -82,6 +82,13 @@
                     <input type="text" name="message" id="chat-input" placeholder="Type a message..."
                            class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-maple-500 focus:border-transparent"
                            autocomplete="off" required>
+                    <button type="button" id="ptt-btn"
+                            onmousedown="startRecording()" onmouseup="stopRecording()" onmouseleave="stopRecording()"
+                            ontouchstart="startRecording(); event.preventDefault();" ontouchend="stopRecording()"
+                            class="ptt-btn bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-all font-medium"
+                            title="Hold to speak">
+                        🎤
+                    </button>
                     <button type="submit" id="send-btn" class="maple-gradient text-white px-6 py-2 rounded-lg hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity font-medium">
                         Send
                     </button>
@@ -148,6 +155,25 @@
 }
 .light-sync-slider input[type="range"] {
     cursor: pointer;
+}
+/* PTT Button States */
+.ptt-btn {
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+}
+.ptt-btn.recording {
+    background-color: #ef4444 !important;
+    animation: pulse-recording 1s infinite;
+}
+.ptt-btn.transcribing {
+    background-color: #f97316 !important;
+    opacity: 0.7;
+    cursor: wait;
+}
+@keyframes pulse-recording {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+    50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
 }
 </style>
 
@@ -492,5 +518,114 @@ document.body.addEventListener('htmx:afterSwap', function(event) {
         }
     }
 });
+
+// Push-to-Talk (PTT) State
+let mediaRecorder = null;
+let audioChunks = [];
+let pttState = 'idle'; // idle, recording, transcribing
+
+function updatePTTButton(state) {
+    const btn = document.getElementById('ptt-btn');
+    if (!btn) return;
+
+    pttState = state;
+    btn.classList.remove('recording', 'transcribing');
+
+    switch (state) {
+        case 'recording':
+            btn.classList.add('recording');
+            btn.textContent = '🔴';
+            btn.title = 'Recording... release to send';
+            break;
+        case 'transcribing':
+            btn.classList.add('transcribing');
+            btn.textContent = '⏳';
+            btn.title = 'Transcribing...';
+            break;
+        default: // idle
+            btn.textContent = '🎤';
+            btn.title = 'Hold to speak';
+    }
+}
+
+async function startRecording() {
+    if (pttState !== 'idle') return;
+
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunks = [];
+
+        // Use webm with opus codec for good quality and browser support
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+            ? 'audio/webm;codecs=opus'
+            : 'audio/webm';
+
+        mediaRecorder = new MediaRecorder(stream, { mimeType });
+
+        mediaRecorder.ondataavailable = (event) => {
+            if (event.data.size > 0) {
+                audioChunks.push(event.data);
+            }
+        };
+
+        mediaRecorder.onstop = () => {
+            // Stop all tracks to release microphone
+            stream.getTracks().forEach(track => track.stop());
+
+            if (audioChunks.length > 0) {
+                const audioBlob = new Blob(audioChunks, { type: mimeType });
+                sendAudioForTranscription(audioBlob);
+            } else {
+                updatePTTButton('idle');
+            }
+        };
+
+        mediaRecorder.start();
+        updatePTTButton('recording');
+    } catch (err) {
+        console.error('Failed to start recording:', err);
+        updatePTTButton('idle');
+    }
+}
+
+function stopRecording() {
+    if (pttState !== 'recording' || !mediaRecorder) return;
+
+    mediaRecorder.stop();
+    mediaRecorder = null;
+}
+
+async function sendAudioForTranscription(audioBlob) {
+    updatePTTButton('transcribing');
+
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'recording.webm');
+
+    try {
+        const response = await fetch('/stt/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`STT failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data.text) {
+            // Put transcribed text in input and submit form
+            const input = document.getElementById('chat-input');
+            input.value = data.text;
+            document.getElementById('chat-form').requestSubmit();
+        }
+    } catch (err) {
+        console.error('Transcription failed:', err);
+    } finally {
+        updatePTTButton('idle');
+    }
+}
 </script>
 {% endblock %}
