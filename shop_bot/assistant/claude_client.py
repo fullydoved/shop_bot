@@ -33,7 +33,13 @@ class ClaudeClient:
         }
 
         if system:
-            kwargs['system'] = system
+            kwargs['system'] = [
+                {
+                    "type": "text",
+                    "text": system,
+                    "cache_control": {"type": "ephemeral"}
+                }
+            ]
 
         if tools:
             # Convert our tool format to Claude's format
@@ -53,6 +59,9 @@ class ClaudeClient:
                     'description': func.get('description', ''),
                     'input_schema': func.get('parameters', {'type': 'object', 'properties': {}})
                 })
+        # Cache the tools (mark last item with cache_control)
+        if claude_tools:
+            claude_tools[-1]['cache_control'] = {"type": "ephemeral"}
         return claude_tools
 
     def get_response_text(self, response) -> str:
