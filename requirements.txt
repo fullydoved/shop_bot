@@ -8,7 +8,7 @@ PyChromecast>=14.0
 piper-tts>=1.2
 faster-whisper>=1.0
 APScheduler>=3.10
-duckduckgo-search>=8.0
+ddgs>=7.0
 beautifulsoup4>=4.12
 
 # Optional: for local LLM fallback

@@ -23,7 +23,7 @@ def search_web(query: str, max_results: int = 3) -> list[dict]:
 
     max_results = min(max(1, max_results), 5)
 
-    from duckduckgo_search import DDGS
+    from ddgs import DDGS
 
     with DDGS() as ddgs:
         results = list(ddgs.text(query, max_results=max_results))
