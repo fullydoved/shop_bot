@@ -21,6 +21,7 @@ from tools.services import (
     add_tool, remove_tool, checkout_tool, return_tool,
     find_tool, list_tools,
 )
+from assistant.web import search_web, fetch_url
 
 
 def handle_add_inventory_items(bin_code: str, items: list, divider_type: str = None, **kwargs) -> str:
@@ -588,6 +589,51 @@ def handle_remove_shop_tool(name: str, **kwargs) -> str:
     return f"Tool '{name}' not found"
 
 
+# --- Web search handlers ---
+
+def handle_search_web(query: str, max_results: int = 3, **kwargs) -> str:
+    """Handle searching the web."""
+    try:
+        results = search_web(query, max_results)
+        if not results:
+            return f"No results found for '{query}'"
+
+        lines = [f"Search results for '{query}':"]
+        for i, r in enumerate(results, 1):
+            lines.append(f"\n{i}. {r['title']}")
+            lines.append(f"   {r['url']}")
+            if r['snippet']:
+                lines.append(f"   {r['snippet']}")
+
+        return "\n".join(lines)
+    except ValueError as e:
+        return str(e)
+    except Exception as e:
+        return f"Search error: {e}"
+
+
+def handle_fetch_url(url: str, **kwargs) -> str:
+    """Handle fetching URL content."""
+    try:
+        result = fetch_url(url)
+
+        lines = []
+        if result['title']:
+            lines.append(f"Title: {result['title']}")
+
+        if result['content']:
+            lines.append(f"\n{result['content']}")
+
+        if not lines:
+            return f"No content extracted from {url}"
+
+        return "\n".join(lines)
+    except ValueError as e:
+        return str(e)
+    except Exception as e:
+        return f"Fetch error: {e}"
+
+
 COMMAND_HANDLERS = {
     'add_inventory_items': handle_add_inventory_items,
     'find_inventory': handle_find_inventory,
@@ -626,4 +672,6 @@ COMMAND_HANDLERS = {
     'find_shop_tool': handle_find_shop_tool,
     'list_shop_tools': handle_list_shop_tools,
     'remove_shop_tool': handle_remove_shop_tool,
+    'search_web': handle_search_web,
+    'fetch_url': handle_fetch_url,
 }

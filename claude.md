@@ -29,7 +29,7 @@ shop_bot/
 ├── assistant/           # Claude AI integration
 │   ├── claude_client.py # API wrapper
 │   ├── processor.py     # Input processing & history management
-│   ├── prompts.py       # System prompt & tool definitions (37 tools)
+│   ├── prompts.py       # System prompt & tool definitions (39 tools)
 │   ├── commands.py      # Tool execution handlers
 │   ├── tts.py           # Piper TTS integration
 │   └── stt.py           # Whisper STT integration
@@ -43,7 +43,7 @@ shop_bot/
 └── cli/                 # Terminal REPL interface
 ```
 
-## Chat Tools (37 total)
+## Chat Tools (39 total)
 
 ### Inventory (6 tools)
 | Tool | Description | Example |
@@ -139,6 +139,17 @@ shop_bot/
 | `find_shop_tool` | Find tool / who has it | "Where's my multimeter?" |
 | `list_shop_tools` | List all tools & status | "What tools are checked out?" |
 | `remove_shop_tool` | Remove tool from system | "Remove the broken drill" |
+
+### Web (2 tools)
+| Tool | Description | Example |
+|------|-------------|---------|
+| `search_web` | Search the internet | "Search for Ender 3 bed leveling tips" |
+| `fetch_url` | Read content from a URL | "What does this page say: https://reprap.org/wiki/Calibration" |
+
+**Notes:**
+- `search_web` uses DuckDuckGo (no API key required)
+- `fetch_url` extracts text from HTML pages, truncated to ~1500 chars
+- JavaScript-heavy pages (SPAs) won't work with fetch_url
 
 ## Text-to-Speech
 

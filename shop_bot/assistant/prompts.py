@@ -556,4 +556,34 @@ TOOL_DEFINITIONS = [
             'parameters': {'type': 'object', 'properties': {}}
         }
     },
+    # --- Web tools ---
+    {
+        'type': 'function',
+        'function': {
+            'name': 'search_web',
+            'description': 'Search the internet for information. Example: "Search for Ender 3 bed leveling tips"',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'query': {'type': 'string', 'description': 'Search query string'},
+                    'max_results': {'type': 'integer', 'description': 'Number of results (default 3, max 5)'}
+                },
+                'required': ['query']
+            }
+        }
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'fetch_url',
+            'description': 'Read content from a URL. Works best with static HTML pages. Example: "What does this page say: https://reprap.org/wiki/Calibration"',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'url': {'type': 'string', 'description': 'Full URL to fetch (http or https)'}
+                },
+                'required': ['url']
+            }
+        }
+    },
 ]
