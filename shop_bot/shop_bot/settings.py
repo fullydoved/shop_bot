@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'cli',
     'reminders',
     'tools',
+    'nfc',
 ]
 
 MIDDLEWARE = [
@@ -155,3 +156,6 @@ WLED_HOST = os.environ.get('WLED_HOST', 'http://192.168.1.23')
 # Chromecast Configuration
 CHROMECAST_HOST = os.environ.get('CHROMECAST_HOST', None)  # Direct IP (preferred for WSL2/Docker)
 CHROMECAST_NAME = os.environ.get('CHROMECAST_NAME', 'Shop Speakers')  # For mDNS discovery fallback
+
+# NFC Configuration
+NFC_HOST = os.environ.get('NFC_HOST', '192.168.1.85:42070')  # host:port for NDEF URLs on tags

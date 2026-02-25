@@ -1,0 +1,42 @@
+{% if items %}
+<ul class="divide-y divide-gray-100">
+    {% for item in items %}
+    <li class="px-4 py-3 flex items-center justify-between">
+        <div class="min-w-0 flex-1">
+            <p class="text-sm font-medium text-gray-900 truncate">{{ item.name }}</p>
+            <div class="flex items-center gap-2 mt-0.5">
+                {% if item.category %}
+                    <span class="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{{ item.category }}</span>
+                {% endif %}
+                {% if item.position %}
+                    <span class="text-xs text-gray-400">{{ item.position }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="flex items-center gap-3 ml-4">
+            {% if item.quantity is not None %}
+                <span class="text-sm font-mono {% if item.quantity == 0 %}text-red-500 font-bold{% else %}text-gray-700{% endif %}">
+                    {{ item.quantity }}{% if item.unit %} {{ item.unit }}{% endif %}
+                </span>
+                {% if item.quantity > 0 %}
+                <form hx-post="/nfc/bin/{{ bin.code }}/use/" hx-target="#item-list" hx-swap="innerHTML">
+                    {% csrf_token %}
+                    <input type="hidden" name="item_id" value="{{ item.id }}">
+                    <button type="submit"
+                            class="px-2 py-1 bg-amber-100 hover:bg-amber-200 text-amber-700 rounded text-xs font-medium transition-colors">
+                        -1
+                    </button>
+                </form>
+                {% endif %}
+            {% else %}
+                <span class="text-xs text-gray-400">no qty</span>
+            {% endif %}
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<div class="px-4 py-8 text-center text-gray-400 text-sm">
+    This bin is empty. Add items below.
+</div>
+{% endif %}

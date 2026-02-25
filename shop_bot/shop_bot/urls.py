@@ -29,4 +29,6 @@ urlpatterns = [
     path('tasks/<int:task_id>/delete/', delete_task, name='delete_task'),
     # Reminders
     path('reminders/poll/', poll_reminders, name='poll_reminders'),
+    # NFC
+    path('nfc/', include('nfc.urls')),
 ]

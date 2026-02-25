@@ -10,6 +10,7 @@ faster-whisper>=1.0
 APScheduler>=3.10
 ddgs>=7.0
 beautifulsoup4>=4.12
+ndef>=0.3
 
 # Optional: for local LLM fallback
 ollama>=0.4
