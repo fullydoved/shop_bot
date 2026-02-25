@@ -27,6 +27,7 @@ class InventoryItem(models.Model):
     position = models.CharField(max_length=20, blank=True, help_text='Position in bin: left, right, front, back, etc.')
     quantity = models.PositiveIntegerField(null=True, blank=True)
     unit = models.CharField(max_length=50, blank=True)
+    piece_weight_grams = models.FloatField(null=True, blank=True, help_text='Weight of one piece in grams')
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

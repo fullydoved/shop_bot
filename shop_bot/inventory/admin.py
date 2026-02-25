@@ -11,7 +11,7 @@ class BinAdmin(admin.ModelAdmin):
 
 @admin.register(InventoryItem)
 class InventoryItemAdmin(admin.ModelAdmin):
-    list_display = ('name', 'category', 'bin', 'quantity', 'unit', 'updated_at')
+    list_display = ('name', 'category', 'bin', 'quantity', 'unit', 'piece_weight_grams', 'updated_at')
     search_fields = ('name', 'category', 'notes')
     list_filter = ('category', 'bin')
     ordering = ('name',)

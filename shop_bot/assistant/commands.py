@@ -589,6 +589,45 @@ def handle_remove_shop_tool(name: str, **kwargs) -> str:
     return f"Tool '{name}' not found"
 
 
+# --- Weight-to-count handlers ---
+
+def handle_calibrate_piece_weight(item_name: str, sample_count: int, sample_weight_grams: float, **kwargs) -> str:
+    """Handle calibrating per-piece weight from a sample."""
+    from inventory.models import InventoryItem
+    from inventory.normalize import normalize_fastener_name
+
+    normalized = normalize_fastener_name(item_name)
+    item = InventoryItem.objects.filter(name__icontains=normalized).first()
+    if not item:
+        item = InventoryItem.objects.filter(name__icontains=item_name).first()
+    if not item:
+        return f"Couldn't find '{item_name}' in inventory."
+
+    piece_weight = sample_weight_grams / sample_count
+    item.piece_weight_grams = piece_weight
+    item.save()
+    return f"Calibrated {item.name}: {piece_weight:.4g}g per piece (from {sample_count} pcs @ {sample_weight_grams}g)"
+
+
+def handle_count_by_weight(item_name: str, total_weight_grams: float, **kwargs) -> str:
+    """Handle counting items by total weight."""
+    from inventory.models import InventoryItem
+    from inventory.normalize import normalize_fastener_name
+
+    normalized = normalize_fastener_name(item_name)
+    item = InventoryItem.objects.filter(name__icontains=normalized).first()
+    if not item:
+        item = InventoryItem.objects.filter(name__icontains=item_name).first()
+    if not item:
+        return f"Couldn't find '{item_name}' in inventory."
+
+    if not item.piece_weight_grams:
+        return f"{item.name} doesn't have a calibrated piece weight. Weigh a sample first with calibrate_piece_weight."
+
+    count = round(total_weight_grams / item.piece_weight_grams)
+    return f"{total_weight_grams}g of {item.name} ≈ {count} pieces ({item.piece_weight_grams:.4g}g each)"
+
+
 # --- Web search handlers ---
 
 def handle_search_web(query: str, max_results: int = 3, **kwargs) -> str:
@@ -672,6 +711,8 @@ COMMAND_HANDLERS = {
     'find_shop_tool': handle_find_shop_tool,
     'list_shop_tools': handle_list_shop_tools,
     'remove_shop_tool': handle_remove_shop_tool,
+    'calibrate_piece_weight': handle_calibrate_piece_weight,
+    'count_by_weight': handle_count_by_weight,
     'search_web': handle_search_web,
     'fetch_url': handle_fetch_url,
 }

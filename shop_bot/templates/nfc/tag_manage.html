@@ -99,5 +99,34 @@
             </tbody>
         </table>
     </div>
+    <!-- Reader Setup -->
+    <div class="bg-white rounded-lg shadow p-4 mt-6">
+        <h2 class="font-semibold text-gray-700 mb-3">Reader Setup</h2>
+        <div class="text-sm text-gray-600 space-y-3">
+            <div>
+                <h3 class="font-medium text-gray-700">Prerequisites</h3>
+                <p>ACR1252U USB NFC reader, Python 3</p>
+            </div>
+            <div>
+                <h3 class="font-medium text-gray-700">Install</h3>
+                <pre class="bg-gray-50 rounded p-2 text-xs font-mono mt-1">pip install pyscard ndef requests</pre>
+            </div>
+            <div>
+                <h3 class="font-medium text-gray-700">Scan mode</h3>
+                <p>Polls for tags and opens the bin page in your browser:</p>
+                <pre class="bg-gray-50 rounded p-2 text-xs font-mono mt-1">python reader.py</pre>
+            </div>
+            <div>
+                <h3 class="font-medium text-gray-700">Write mode</h3>
+                <p>Writes an NDEF URL to a blank tag for a given bin code:</p>
+                <pre class="bg-gray-50 rounded p-2 text-xs font-mono mt-1">python reader.py --write A1</pre>
+            </div>
+            <div>
+                <h3 class="font-medium text-gray-700">Configuration</h3>
+                <p>Set <code class="bg-gray-100 px-1 rounded text-xs">NFC_HOST</code> env var to point at your server (defaults to <code class="bg-gray-100 px-1 rounded text-xs">http://localhost:8000</code>):</p>
+                <pre class="bg-gray-50 rounded p-2 text-xs font-mono mt-1">export NFC_HOST=http://192.168.1.50:8000</pre>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

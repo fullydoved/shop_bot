@@ -556,6 +556,38 @@ TOOL_DEFINITIONS = [
             'parameters': {'type': 'object', 'properties': {}}
         }
     },
+    # --- Weight-to-count tools ---
+    {
+        'type': 'function',
+        'function': {
+            'name': 'calibrate_piece_weight',
+            'description': 'Calibrate per-piece weight for an item by weighing a sample. Example: "I weighed 10 M3x6 socket heads and they weigh 3 grams"',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'item_name': {'type': 'string', 'description': 'Item name (partial match OK)'},
+                    'sample_count': {'type': 'integer', 'description': 'Number of pieces in the sample'},
+                    'sample_weight_grams': {'type': 'number', 'description': 'Total weight of the sample in grams'}
+                },
+                'required': ['item_name', 'sample_count', 'sample_weight_grams']
+            }
+        }
+    },
+    {
+        'type': 'function',
+        'function': {
+            'name': 'count_by_weight',
+            'description': 'Count items by weighing them. Requires piece_weight to be calibrated first. Example: "the bag of M3x6 weighs 45 grams, how many?"',
+            'parameters': {
+                'type': 'object',
+                'properties': {
+                    'item_name': {'type': 'string', 'description': 'Item name (partial match OK)'},
+                    'total_weight_grams': {'type': 'number', 'description': 'Total weight of all pieces in grams'}
+                },
+                'required': ['item_name', 'total_weight_grams']
+            }
+        }
+    },
     # --- Web tools ---
     {
         'type': 'function',
