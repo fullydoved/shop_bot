@@ -7,7 +7,8 @@ Communicates with the BEAVS Django app over HTTP.
 
 Usage:
     python reader.py              # Scan mode: poll for tags, open browser
-    python reader.py --write A1   # Write mode: write NDEF URL for bin A1 to tag
+    python reader.py --write      # Write mode: prompt for bin codes in a loop
+    python reader.py --write A1   # Write mode: start with bin A1, then prompt for more
 """
 
 import argparse
@@ -241,15 +242,14 @@ def scan_mode():
         time.sleep(POLL_INTERVAL)
 
 
-def write_mode(bin_code: str):
-    """Write an NDEF URL to a tag and register it with BEAVS."""
+def write_tag(bin_code: str):
+    """Write an NDEF URL to a single tag and register it with BEAVS."""
     from smartcard.System import readers
 
     bin_code = bin_code.upper()
     url = build_bin_url(bin_code)
 
-    print(f'NFC Reader - Write Mode')
-    print(f'Bin: {bin_code}')
+    print(f'\nBin: {bin_code}')
     print(f'URL: {url}')
     print(f'Place tag on reader...')
 
@@ -274,7 +274,7 @@ def write_mode(bin_code: str):
                 time.sleep(0.5)
                 continue
 
-            print(f'\nTag detected: {uid}')
+            print(f'  Tag detected: {uid}')
             print(f'  Writing NDEF URL: {url}')
 
             if write_ndef_url(connection, url):
@@ -287,18 +287,52 @@ def write_mode(bin_code: str):
                 else:
                     print(f'  Warning: write succeeded but API registration failed')
 
-                print(f'\nDone! Remove tag.')
-                break
-            else:
-                print(f'  Write FAILED. Try again.')
-                break
+                print(f'  Done! Remove tag.')
 
-        except KeyboardInterrupt:
-            print('\nCancelled.')
-            break
+                # Wait for tag to be removed before returning
+                while True:
+                    try:
+                        connection = reader.createConnection()
+                        connection.connect()
+                        check_uid = get_uid(connection)
+                        if check_uid != uid:
+                            return True
+                    except Exception:
+                        return True
+                    time.sleep(0.3)
+            else:
+                print(f'  Write FAILED.')
+                return False
+
         except Exception as e:
             print(f'Error: {e}')
-            break
+            return False
+
+
+def write_mode(initial_bin_code: str | None = None):
+    """Write NDEF URLs to tags in a loop, prompting for each bin code."""
+    print(f'NFC Reader - Write Mode (Ctrl+C to quit)')
+    print(f'BEAVS: {BEAVS_BASE}')
+
+    bin_code = initial_bin_code
+    written = 0
+
+    try:
+        while True:
+            if not bin_code:
+                print(f'\n--- Tags written so far: {written} ---')
+                bin_code = input('Enter bin code (or "q" to quit): ').strip()
+                if not bin_code or bin_code.lower() == 'q':
+                    break
+
+            write_tag(bin_code)
+            written += 1
+            bin_code = None  # Prompt for next one
+
+    except KeyboardInterrupt:
+        pass
+
+    print(f'\nDone. Wrote {written} tag(s).')
 
 
 def main():
@@ -306,12 +340,15 @@ def main():
     parser.add_argument(
         '--write',
         metavar='BIN_CODE',
-        help='Write mode: write NDEF URL for the given bin code to a tag',
+        nargs='?',
+        const='',
+        default=None,
+        help='Write mode: write NDEF URLs to tags. Optionally pass a bin code for the first tag.',
     )
     args = parser.parse_args()
 
-    if args.write:
-        write_mode(args.write)
+    if args.write is not None:
+        write_mode(args.write or None)
     else:
         scan_mode()
 
