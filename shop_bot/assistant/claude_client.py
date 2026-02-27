@@ -7,7 +7,7 @@ class ClaudeClient:
 
     def __init__(self, api_key=None, model=None):
         self.api_key = api_key or getattr(settings, 'ANTHROPIC_API_KEY', '')
-        self.model = model or getattr(settings, 'CLAUDE_MODEL', 'claude-sonnet-4-20250514')
+        self.model = model or getattr(settings, 'CLAUDE_MODEL', 'claude-haiku-4-5-20251001')
 
         if not self.api_key:
             raise ValueError("ANTHROPIC_API_KEY not set. Add it to your .env file.")
